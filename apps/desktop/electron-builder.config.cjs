@@ -53,6 +53,7 @@ module.exports = {
     runAfterFinish: true,
   },
   mac: {
+    ...(process.env.DESKTOP_FORCE_CODE_SIGNING === 'true' ? {} : { identity: null }),
     category: 'public.app-category.developer-tools',
     target: ['dmg', 'zip'],
     hardenedRuntime: true,

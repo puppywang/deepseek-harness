@@ -48,7 +48,7 @@ Packaged Windows and macOS builds check the GitHub Release for `deepseek-ai/deep
 
 ## Signing and CI
 
-The GitHub Actions desktop release workflow builds Windows, macOS, and Linux artifacts from a `dsh-v<version>` tag and attaches them to the GitHub Release. Windows signing reads `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD`; macOS signing and notarization read `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`. These values are repository or environment secrets and are never committed. A build without secrets is suitable for local packaging; the protected production signing job fails when its required signing secrets are absent.
+The GitHub Actions desktop release workflow builds Windows, macOS, and Linux artifacts from a `dsh-v<version>` tag and attaches them to the GitHub Release. Windows signing reads `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD`; macOS signing and notarization read `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`. These values are repository or environment secrets and are never committed. When `DESKTOP_FORCE_CODE_SIGNING` is not `true`, macOS explicitly disables signing so an empty CI secret cannot be mistaken for a certificate path; the protected production signing job leaves that identity unset and fails when its required signing secrets are absent.
 
 GitLab CI uses the same `dsh-v<version>` tag to run native Windows, macOS, and Linux packaging jobs in parallel and exposes each platform's installers as Job Artifacts. Set `DESKTOP_WINDOWS_RUNNER_TAG`, `DESKTOP_MACOS_RUNNER_TAG`, and `DESKTOP_LINUX_RUNNER_TAG` when the GitLab runner tags differ from the defaults; keep signing inputs in protected CI variables.
 

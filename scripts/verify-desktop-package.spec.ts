@@ -12,6 +12,7 @@ const { resolveResourcesRoot } = require('./verify-desktop-package.cjs') as {
 }
 const desktopConfig = require('../apps/desktop/electron-builder.config.cjs') as {
   linux?: { maintainer?: string }
+  mac?: { identity?: string | null }
 }
 const desktopPackage = require('../apps/desktop/package.json') as {
   homepage?: string
@@ -41,5 +42,9 @@ describe('desktop package verification', () => {
   it('declares the metadata required by Linux deb packaging', () => {
     expect(desktopPackage.homepage).toBe('https://github.com/deepseek-ai/deepseek-harness')
     expect(desktopConfig.linux?.maintainer).toBe('DeepSeek')
+  })
+
+  it('skips macOS signing when the build does not require a certificate', () => {
+    expect(desktopConfig.mac?.identity).toBe(null)
   })
 })
