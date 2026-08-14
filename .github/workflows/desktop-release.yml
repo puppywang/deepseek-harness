@@ -82,7 +82,9 @@ jobs:
       - name: Build and package
         run: pnpm --filter @deepseek-ai/dsh-desktop run ${{ matrix.command }}
         env:
-          DESKTOP_FORCE_CODE_SIGNING: ${{ matrix.os != 'linux' && 'true' || 'false' }}
+          # Forks can validate packaging without holding production certificates.
+          # The canonical repository keeps signing mandatory for Windows/macOS.
+          DESKTOP_FORCE_CODE_SIGNING: ${{ github.repository == 'deepseek-ai/deepseek-harness' && matrix.os != 'linux' && 'true' || 'false' }}
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
