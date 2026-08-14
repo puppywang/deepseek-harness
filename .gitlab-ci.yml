@@ -1,6 +1,7 @@
 workflow:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^python-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$/'
+    - if: '$CI_COMMIT_TAG =~ /^dsh-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$/'
     - when: never
 
 stages:
@@ -10,8 +11,23 @@ stages:
 variables:
   GIT_DEPTH: "0"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  DESKTOP_WINDOWS_RUNNER_TAG: "windows-2025"
+  DESKTOP_MACOS_RUNNER_TAG: "macos-arm64"
+  DESKTOP_LINUX_RUNNER_TAG: "linux-x64"
+  DESKTOP_FORCE_CODE_SIGNING: "false"
+
+.python-release:
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^python-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$/'
+    - when: never
+
+.desktop-release:
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^dsh-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$/'
+    - when: never
 
 .python-tools:
+  extends: .python-release
   before_script:
     - python3 -m venv .ci-python
     - . .ci-python/bin/activate
@@ -97,6 +113,7 @@ runtime-macos-arm64:
       artifacts: true
 
 publish-python:
+  extends: .python-release
   stage: publish
   tags: [linux-x64]
   resource_group: python-release
@@ -127,3 +144,62 @@ publish-python:
     - export TWINE_PASSWORD="$CI_JOB_TOKEN"
     - export TWINE_REPOSITORY_URL="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/pypi"
     - python -m twine upload --non-interactive release/*/*.whl || { echo 'Publish failed. GitLab does not overwrite an existing version; create a new python-v<repository-version> tag.'; exit 1; }
+
+desktop-windows:
+  extends: .desktop-release
+  stage: build
+  tags: ["$DESKTOP_WINDOWS_RUNNER_TAG"]
+  script:
+    - |
+      $version = node -p "require('./package.json').version"
+      if ($env:CI_COMMIT_TAG -ne "dsh-v$version") {
+        throw "Tag $env:CI_COMMIT_TAG does not match package.json version $version"
+      }
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm --filter @deepseek-ai/dsh-desktop run build:installer:win
+  artifacts:
+    name: "deepseek-harness-desktop-windows-$CI_COMMIT_TAG"
+    paths:
+      - dist/desktop/*.exe
+      - dist/desktop/*.blockmap
+      - dist/desktop/*.yml
+    expire_in: 1 week
+
+desktop-macos:
+  extends: .desktop-release
+  stage: build
+  tags: ["$DESKTOP_MACOS_RUNNER_TAG"]
+  script:
+    - |
+      test "$CI_COMMIT_TAG" = "dsh-v$(node -p 'require("./package.json").version')"
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm --filter @deepseek-ai/dsh-desktop run build:installer:mac
+  artifacts:
+    name: "deepseek-harness-desktop-macos-$CI_COMMIT_TAG"
+    paths:
+      - dist/desktop/*.dmg
+      - dist/desktop/*.zip
+      - dist/desktop/*.blockmap
+      - dist/desktop/*.yml
+    expire_in: 1 week
+
+desktop-linux:
+  extends: .desktop-release
+  stage: build
+  tags: ["$DESKTOP_LINUX_RUNNER_TAG"]
+  script:
+    - |
+      test "$CI_COMMIT_TAG" = "dsh-v$(node -p 'require("./package.json").version')"
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm --filter @deepseek-ai/dsh-desktop run build:installer:linux
+  artifacts:
+    name: "deepseek-harness-desktop-linux-$CI_COMMIT_TAG"
+    paths:
+      - dist/desktop/*.AppImage
+      - dist/desktop/*.deb
+      - dist/desktop/*.blockmap
+      - dist/desktop/*.yml
+    expire_in: 1 week

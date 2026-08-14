@@ -107,6 +107,15 @@ export abstract class ReleaseFamily {
   }
 
   /**
+   * Select the members that become npm artifacts.
+   * @param members - all members discovered for the family.
+   * @returns The members that are packed and published.
+   */
+  publishMembers(members: readonly ReleaseMember[]): ReleaseMember[] {
+    return [...members]
+  }
+
+  /**
    * Order members so every package publishes after the family members it depends on.
    * @param members - this family's members.
    * @returns The same members in publish order; ties break by name for determinism.
@@ -198,6 +207,16 @@ class DshFamily extends ReleaseFamily {
   readonly id = 'dsh'
   readonly patterns = ['packages/*/*/package.json', 'apps/*/package.json'] as const
   readonly tagPrefix = 'dsh-v'
+
+  /**
+   * Keep private applications in the shared version baseline, but omit them
+   * from npm pack and publish steps.
+   * @param members - all dsh family members.
+   * @returns Public dsh packages only.
+   */
+  override publishMembers(members: readonly ReleaseMember[]): ReleaseMember[] {
+    return members.filter(member => member.manifest.private !== true)
+  }
 
   /**
    * Require one version across the family, the way a single tag can name it.

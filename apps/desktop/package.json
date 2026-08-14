@@ -1,0 +1,30 @@
+{
+  "name": "@deepseek-ai/dsh-desktop",
+  "version": "0.1.0-rc.5",
+  "private": true,
+  "description": "Electron desktop shell for DeepSeek Harness",
+  "author": "DeepSeek",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "start": "pnpm run build && electron .",
+    "dev": "pnpm run build && electron . --dev",
+    "build:installer": "pnpm --dir ../.. run build && pnpm --dir ../.. run desktop:runtime && node ../../scripts/verify-desktop-runtime.mjs && pnpm run build && electron-builder --config electron-builder.config.cjs --publish never",
+    "build:installer:win": "pnpm --dir ../.. run build && pnpm --dir ../.. run desktop:runtime && node ../../scripts/verify-desktop-runtime.mjs && pnpm run build && electron-builder --config electron-builder.config.cjs --win nsis --publish never",
+    "build:installer:mac": "pnpm --dir ../.. run build && pnpm --dir ../.. run desktop:runtime && node ../../scripts/verify-desktop-runtime.mjs && pnpm run build && electron-builder --config electron-builder.config.cjs --mac dmg zip --publish never",
+    "build:installer:linux": "pnpm --dir ../.. run build && pnpm --dir ../.. run desktop:runtime && node ../../scripts/verify-desktop-runtime.mjs && pnpm run build && electron-builder --config electron-builder.config.cjs --linux AppImage deb --publish never",
+    "release": "pnpm --dir ../.. run build && pnpm --dir ../.. run desktop:runtime && node ../../scripts/verify-desktop-runtime.mjs && pnpm run build && electron-builder --config electron-builder.config.cjs --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "^6.0.3"
+  }
+}

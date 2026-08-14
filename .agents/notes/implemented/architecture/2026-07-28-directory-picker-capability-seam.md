@@ -44,5 +44,5 @@ Placement and policy rulings folded into this decision:
 
 - `cordis.yml` chooses the interaction; `apps/cli` mounts the [`-auto` chooser](../feature/2026-07-29-directory-picker-adaptive-default.md), which resolves the host's situation at boot and mounts `-native` or `-browse` itself, one row still swapping backend and UI together; composing a backend row directly pins the interaction.
 - The wire gains `host.listDirectory`/`host.createDirectory` and four error codes; the connection fixture serves a deterministic browse tree and a deterministic `pickDirectory` path for keyless assembled tests.
-- A future interaction (or an Electron provider of the `native` interaction) is one dual-face backend package — no gateway surgery, no ui-workspace edits.
+- The Electron desktop shell supplies the existing `native` interaction through a token-authenticated loopback bridge: the Host child passes the request to Electron's main process, which opens the chooser; the same desktop bridge handles Host-resolved path opening, while ordinary `dsh web` keeps the direct platform adapters. This requires no gateway surgery or ui-workspace edits.
 - `ApiProxyDefaults.pickDirectory` (test-only injection) is gone; tests provide a stub `ctx.directoryPicker` like any other service.

@@ -64,6 +64,16 @@ describe('native directory picker', () => {
     expect(run).not.toHaveBeenCalled()
   })
 
+  it('uses the Electron desktop bridge before platform-specific pickers', async () => {
+    const run = vi.fn<DirectoryPickerRunner>()
+    const electronPicker = vi.fn(async (): Promise<string | null> => 'C:\\electron\\selected')
+    await expect(pickNativeDirectory(signal(), {
+      platform: 'win32', run, electronPicker,
+    })).resolves.toBe('C:\\electron\\selected')
+    expect(electronPicker).toHaveBeenCalledOnce()
+    expect(run).not.toHaveBeenCalled()
+  })
+
   it('surfaces the Win32 dialog failure with no fallback', async () => {
     const run = vi.fn<DirectoryPickerRunner>()
     await expect(pickNativeDirectory(signal(), { platform: 'win32', run, pickWin32Dialog: noDialog }))

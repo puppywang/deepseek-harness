@@ -25,7 +25,8 @@
     "clean": "tsx scripts/clean.ts",
     "change-scope": "tsx scripts/change-scope.ts",
     "typecheck": "npm run build:lib:host && npm run typecheck:contracts-ready",
-    "typecheck:contracts-ready": "tsc -b tsconfig.client.json",
+    "typecheck:contracts-ready": "tsc -b tsconfig.client.json && npm run typecheck:desktop",
+    "typecheck:desktop": "pnpm --filter @deepseek-ai/dsh-desktop run typecheck",
     "lint": "npm run build:lib:host && npm run lint:contracts-ready",
     "lint:contracts-ready": "tsx scripts/run-oxlint.ts .",
     "lint:fix": "npm run build:lib:host && npm run lint:fix:contracts-ready",
@@ -139,6 +140,13 @@
     "demo:acp": "node --import tsx packages/examples/acp-demo/src/bin.ts --config examples/acp-agent/cordis.yml",
     "mock:llm": "node --import tsx packages/test-support/llm-mock-server/src/bin.ts",
     "dev:web": "tsx scripts/dev-web.ts --poll",
+    "desktop": "pnpm --filter @deepseek-ai/dsh-desktop run dev",
+    "desktop:runtime": "node scripts/build-desktop-runtime.mjs && node scripts/verify-desktop-runtime-closure.mjs",
+    "desktop:runtime:closure": "node scripts/verify-desktop-runtime-closure.mjs",
+    "desktop:runtime:smoke": "node scripts/verify-desktop-runtime.mjs",
+    "desktop:launch:smoke:win": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-desktop-launch.ps1",
+    "desktop:build": "pnpm --filter @deepseek-ai/dsh-desktop run build",
+    "desktop:package": "pnpm --filter @deepseek-ai/dsh-desktop run build:installer",
     "postinstall": "node scripts/install-lefthook.mjs"
   },
   "devDependencies": {

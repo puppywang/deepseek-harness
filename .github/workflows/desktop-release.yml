@@ -1,0 +1,133 @@
+# Build the Electron desktop artifacts from the shared dsh release tag.
+# Signing is enabled only when the protected environment supplies the platform
+# credentials; the workflow keeps packaging and publication in one job per OS.
+name: Release (desktop)
+
+on:
+  push:
+    tags:
+      - dsh-v*
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing dsh-v* tag to build
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  DSH_TELEMETRY_DISABLED: '1'
+
+jobs:
+  version:
+    name: Verify desktop release tag
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+      - id: version
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          tag="dsh-v${version}"
+          ref_name="${{ inputs.tag || github.ref_name }}"
+          test "$ref_name" = "$tag"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.os }} desktop
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows
+            runner: windows-2025
+            command: build:installer:win
+          - os: macos
+            runner: macos-14
+            command: build:installer:mac
+          - os: linux
+            runner: ubuntu-24.04
+            command: build:installer:linux
+    runs-on: ${{ matrix.runner }}
+    environment: desktop-release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build and package
+        run: pnpm --filter @deepseek-ai/dsh-desktop run ${{ matrix.command }}
+        env:
+          DESKTOP_FORCE_CODE_SIGNING: ${{ matrix.os != 'linux' && 'true' || 'false' }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            dist/desktop/*.exe
+            dist/desktop/*.dmg
+            dist/desktop/*.zip
+            dist/desktop/*.AppImage
+            dist/desktop/*.deb
+            dist/desktop/*.yml
+            dist/desktop/*.blockmap
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release assets
+    needs: [version, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: dist/desktop
+          merge-multiple: true
+      - name: Publish desktop assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: DeepSeek Harness ${{ needs.version.outputs.version }}
+          files: |
+            dist/desktop/*.exe
+            dist/desktop/*.dmg
+            dist/desktop/*.zip
+            dist/desktop/*.AppImage
+            dist/desktop/*.deb
+            dist/desktop/*.yml
+            dist/desktop/*.blockmap
+          fail_on_unmatched_files: true
+          generate_release_notes: true

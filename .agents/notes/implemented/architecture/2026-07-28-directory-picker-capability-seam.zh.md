@@ -44,5 +44,5 @@ web GUI 的「打开本地文件夹」流程被焊死在一种交互上：`host.
 
 - `cordis.yml` 决定交互形态；`apps/cli` 挂 [`-auto` 选择器](../feature/2026-07-29-directory-picker-adaptive-default.md)，它在启动时判定宿主处境并自行挂载 `-native` 或 `-browse`，一行仍同时切换后端与 UI；直接组合某个后端行即固定交互。
 - 协议新增 `host.listDirectory`／`host.createDirectory` 与四个错误码；connection fixture 提供确定性浏览树与确定性 `pickDirectory` 路径供无密钥组装测试使用。
-- 未来的新交互（或提供 `native` 交互的 Electron 提供方）只是一个双面后端包——无需网关手术，也不动 ui-workspace。
+- Electron 桌面壳通过带令牌认证的 loopback 桥提供现有的 `native` 交互：Host 子进程把请求转给 Electron 主进程，由主进程打开选择器；同一桌面桥也处理由 Host 解析的路径打开，普通 `dsh web` 保留直接平台适配器。这不需要改网关，也不需要改 ui-workspace。
 - `ApiProxyDefaults.pickDirectory`（仅测试注入）删除；测试像提供其他服务一样提供 stub `ctx.directoryPicker`。

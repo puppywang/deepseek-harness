@@ -38,6 +38,14 @@ describe('release families', () => {
     expect(() => { dsh.verifyVersions([members[0]!]) }).not.toThrow()
   })
 
+  it('keeps private desktop members in versioning but out of npm publication', () => {
+    const dsh = releaseFamily('dsh')
+    const cli = member('apps/cli', '@deepseek-ai/dsh')
+    const desktop = member('apps/desktop', '@deepseek-ai/dsh-desktop', { private: true })
+
+    expect(dsh.publishMembers([cli, desktop]).map(entry => entry.name)).toEqual(['@deepseek-ai/dsh'])
+  })
+
   it('accepts independent vendored versions and rejects an unpublishable one', () => {
     const vendor = releaseFamily('vendor')
     const members = [

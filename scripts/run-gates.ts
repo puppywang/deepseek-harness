@@ -180,6 +180,10 @@ function pnpmInvocation(args: string[]): Pick<Gate, 'command' | 'args'> {
   if (entrypoint === undefined || entrypoint === '') {
     throw new Error('run-gates: npm_execpath is unavailable; invoke the runner through a pnpm package script.')
   }
+  // pnpm 11 can expose its native Windows executable through npm_execpath; invoke it directly.
+  if (process.platform === 'win32' && entrypoint.toLowerCase().endsWith('.exe')) {
+    return { command: entrypoint, args }
+  }
   // Windows cannot spawn the pnpm.cmd shim directly; the JavaScript entrypoint keeps every host shell-free.
   return { command: process.execPath, args: [entrypoint, ...args] }
 }

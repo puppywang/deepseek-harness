@@ -1,6 +1,11 @@
-/** Cross-platform native single-directory chooser behind the native backend's capability. */
+/** Cross-platform native single-directory chooser, with an Electron-shell adapter when configured. */
 
 import { runNativeCommand, type NativeCommandRunner } from '@deepseek-ai/dsh-native-command'
+import {
+  electronDirectoryPickerBridgeFromEnv,
+  pickElectronDirectory,
+  type ElectronDirectoryPickerBridge,
+} from './electron-bridge.ts'
 import { pickWin32Directory } from './win32-dialog.ts'
 
 /** Testable command boundary; native implementations never invoke a shell. */
@@ -12,6 +17,8 @@ export interface DirectoryPickerInternals {
   run?: DirectoryPickerRunner
   /** Replaces the in-process Win32 dialog (`pickWin32Directory`) for deterministic tests. */
   pickWin32Dialog?: (signal: AbortSignal) => Promise<string | null>
+  /** Replaces the optional Electron desktop bridge for deterministic tests. */
+  electronPicker?: (signal: AbortSignal) => Promise<string | null>
 }
 
 function outputPath(stdout: string): string | null {
@@ -51,6 +58,14 @@ export async function pickNativeDirectory(
 ): Promise<string | null> {
   const platform = internals.platform ?? process.platform
   const run = internals.run ?? runNativeCommand
+  const electronBridge = electronDirectoryPickerBridgeFromEnv()
+  if (electronBridge !== undefined || internals.electronPicker !== undefined) {
+    const pick = internals.electronPicker ?? ((signal: AbortSignal) => pickElectronDirectory(
+      electronBridge as ElectronDirectoryPickerBridge,
+      signal,
+    ))
+    return pick(signal)
+  }
 
   if (platform === 'darwin') {
     try {
