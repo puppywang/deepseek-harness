@@ -596,6 +596,76 @@ describe('provider profile lifecycle', () => {
     expect(server.requests[1]).not.toHaveProperty('reasoning_effort')
   })
 
+  it('keeps the system role for a gateway that lacks the developer role', async () => {
+    vi.stubEnv('PI_TEST_KEY', 'test-key')
+    const server = await mockServer([{ events: textEvents }])
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(LlmPiAi, {
+      providers: {
+        'acme-gateway': {
+          apiKeyEnv: 'PI_TEST_KEY',
+          api: 'openai-completions',
+          baseURL: `${server.url}/v1`,
+          // A reasoning model on an unknown URL makes pi-ai default to the
+          // `developer` role; the switch walks it back for gateways that
+          // accept only `system`.
+          compat: { supportsDeveloperRole: false },
+          models: [{
+            id: 'acme-think',
+            contextWindow: 65_536,
+            maxTokens: 4096,
+            reasoningEfforts: { off: null, high: 'high' },
+          }],
+        },
+      },
+    })
+
+    await assemble(ctx, {
+      provider: 'acme-gateway',
+      model: 'acme-think',
+      system: 'You are a test assistant.',
+      reasoningEffort: ReasoningEffortId('high'),
+      messages: [],
+    })
+    expect(server.requests[0]).toMatchObject({
+      messages: [{ role: 'system', content: 'You are a test assistant.' }],
+    })
+  })
+
+  it('sends the developer role for a reasoning model on an unknown URL by default', async () => {
+    vi.stubEnv('PI_TEST_KEY', 'test-key')
+    const server = await mockServer([{ events: textEvents }])
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(LlmPiAi, {
+      providers: {
+        'acme-gateway': {
+          apiKeyEnv: 'PI_TEST_KEY',
+          api: 'openai-completions',
+          baseURL: `${server.url}/v1`,
+          models: [{
+            id: 'acme-think',
+            contextWindow: 65_536,
+            maxTokens: 4096,
+            reasoningEfforts: { off: null, high: 'high' },
+          }],
+        },
+      },
+    })
+
+    await assemble(ctx, {
+      provider: 'acme-gateway',
+      model: 'acme-think',
+      system: 'You are a test assistant.',
+      reasoningEffort: ReasoningEffortId('high'),
+      messages: [],
+    })
+    expect(server.requests[0]).toMatchObject({
+      messages: [{ role: 'developer', content: 'You are a test assistant.' }],
+    })
+  })
+
   it('sends a declared off value as the effort parameter instead of omitting it', async () => {
     vi.stubEnv('PI_TEST_KEY', 'test-key')
     const server = await mockServer([{ events: textEvents }])

@@ -188,6 +188,7 @@ const thinkingBudgets = z.object({
 const compatProfile: z<PiAiCompatProfile> = z.object({
   thinkingFormat: z.union(SUPPORTED_THINKING_FORMATS),
   supportsReasoningEffort: z.boolean(),
+  supportsDeveloperRole: z.boolean(),
 })
 
 /**

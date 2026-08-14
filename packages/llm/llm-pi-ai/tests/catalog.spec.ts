@@ -771,12 +771,14 @@ describe('reasoning-dispatch compat switches', () => {
         models: [
           { id: 'dialect-default', reasoningEfforts: { off: null, high: 'high' } },
           { id: 'dialect-odd', compat: { thinkingFormat: 'openai', supportsReasoningEffort: false } },
+          { id: 'role-system', compat: { supportsDeveloperRole: false } },
         ],
       },
     }, 'acme-gateway')
 
     expect(models.get('dialect-default')?.compat).toEqual({ thinkingFormat: 'deepseek' })
     expect(models.get('dialect-odd')?.compat).toEqual({ thinkingFormat: 'openai', supportsReasoningEffort: false })
+    expect(models.get('role-system')?.compat).toEqual({ thinkingFormat: 'deepseek', supportsDeveloperRole: false })
   })
 
   it('merges the switches over the catalog entry’s own compat instead of replacing it', () => {
@@ -824,6 +826,9 @@ describe('reasoning-dispatch compat switches', () => {
   it('rejects route switches no model on the route can take', () => {
     expect(() => resolveProfiles({
       anthropic: { compat: { thinkingFormat: 'openai' } },
+    })).toThrow(/no model on the route speaks openai-completions/)
+    expect(() => resolveProfiles({
+      anthropic: { compat: { supportsDeveloperRole: false } },
     })).toThrow(/no model on the route speaks openai-completions/)
   })
 })

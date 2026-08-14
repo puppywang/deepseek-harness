@@ -10,6 +10,8 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { MockAdapter, textResponse, toolCallResponse } from '../../../packages/core/agent-loop/tests/mock-adapter.ts'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import { resolveSessionPreset, SETTINGS_NAMESPACE } from '@deepseek-ai/dsh-agent-presets'
 import { applyChildComposition, childSessionMeta } from '@deepseek-ai/dsh-subagent'
@@ -187,7 +189,7 @@ describe('the shipped Web composition', () => {
   it('supplies both shipped presets, and only those, from the system root', async () => {
     const listed = await ctx.agentPresets.list()
 
-    expect(listed.map(preset => preset.id).sort()).toEqual(['code', 'cordis', 'minimal', 'standard'])
+    expect(listed.map(preset => preset.id).sort()).toEqual(['anchored-standard', 'code', 'cordis', 'minimal', 'standard'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
     expect(ctx.agentPresets.defaultId).toBe('standard')
   })
@@ -209,6 +211,45 @@ describe('the shipped Web composition', () => {
         'subagent', 'subagent_fork', 'todo_write', 'update_goal', 'web_search',
         'workflow', 'write',
       ])
+    } finally {
+      await handle.dispose()
+    }
+  })
+
+  it('anchors the first model request and promotes after its durable tool call', async () => {
+    const adapter = new MockAdapter([
+      toolCallResponse('anchored-c1', 'read', { file_path: 'missing.txt' }),
+      textResponse('done'),
+    ])
+    ctx.llm.registerAdapter(['anchored-mock'], adapter)
+    const handle = await ctx.agents.create({
+      sessionId: SessionId(`preset-anchored-standard-flow-${randomUUID()}`),
+      agentOptions: { provider: 'anchored-mock', model: 'mock' },
+      setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'anchored-standard').then(() => undefined),
+    })
+    try {
+      const hidden = await ctx.tools.execute({
+        callId: CallId('anchored-hidden-direct'),
+        name: 'edit',
+        arguments: {},
+        signal: new AbortController().signal,
+        agent: handle.agent,
+      })
+      expect(hidden.isError).toBe(true)
+      expect(JSON.stringify(hidden.content)).toContain('unavailable during bootstrap')
+
+      handle.agent.followup(createUserMessage({
+        content: [{ type: 'text', text: 'inspect the workspace' }],
+        source: { kind: 'user' },
+      }))
+      await handle.agent.whenIdle()
+
+      const requestsWithTools = adapter.requests
+        .filter(request => request.tools !== undefined)
+        .map(request => request.tools?.map(tool => tool.name))
+      expect(requestsWithTools[0]).toEqual([process.platform === 'win32' ? 'pwsh' : 'bash', 'read'])
+      expect(requestsWithTools.slice(1).some(names => names?.includes('edit'))).toBe(true)
+      expect(handle.agent.session.events.some(event => event.type === 'tool/call' && event.data.name === 'read')).toBe(true)
     } finally {
       await handle.dispose()
     }

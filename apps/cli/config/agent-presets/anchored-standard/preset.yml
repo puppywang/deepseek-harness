@@ -1,0 +1,3 @@
+name: 增强模式（锚定）
+description: 以极简系统提示词 + shell/read 起步，首次工具调用后开放完整标准工具目录（实验性）。
+order: 5

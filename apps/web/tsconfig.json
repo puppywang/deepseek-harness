@@ -23,6 +23,7 @@
   // cannot see both sides of the cordis Context merges).
   "exclude": [
     "tests/scaffold.ts",
+    "tests/anchored-standard.snapshot.ts",
     "tests/scaffold-hermetic.e2e.ts",
     "tests/minimal-preset.snapshot.ts",
     "tests/message-feedback-protocol.snapshot.ts",

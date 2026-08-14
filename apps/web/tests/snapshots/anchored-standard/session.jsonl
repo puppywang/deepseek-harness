@@ -1,0 +1,13 @@
+{"type":"session","version":0,"id":"{{sessionId}}","createdAt":1785974400000,"cwd":"{{cwd}}","agentPreset":"anchored-standard"}
+{"type":"user/message","seq":0,"time":1785974400001,"data":{"content":[{"type":"text","text":"Inspect the workspace and finish."}],"source":{"kind":"user","rpcId":"{{rpcId}}"}},"surfaceOp":"append"}
+{"type":"assistant/chunk","seq":1,"time":1785974400002,"data":{"turn":1,"step":1,"chunk":{"type":"block-start","index":0,"blockType":"tool-call"}}}
+{"type":"assistant/chunk","seq":2,"time":1785974400003,"data":{"turn":1,"step":1,"chunk":{"type":"tool-call-delta","index":0,"id":"anchored-read","name":"read","argumentsDelta":"{\"file"}}}
+{"type":"assistant/chunk","seq":3,"time":1785974400004,"data":{"turn":1,"step":1,"chunk":{"type":"tool-call-delta","index":0,"id":"anchored-read","argumentsDelta":"_path\":\"missing.txt\"}"}}}
+{"type":"assistant/chunk","seq":4,"time":1785974400005,"data":{"turn":1,"step":1,"chunk":{"type":"block-end","index":0,"block":{"type":"tool-call","id":"anchored-read","name":"read","arguments":"{\"file_path\":\"missing.txt\"}"}}}}
+{"type":"assistant/chunk","seq":5,"time":1785974400006,"data":{"turn":1,"step":1,"chunk":{"type":"usage","usage":{"inputTokens":10,"outputTokens":5}}}}
+{"type":"assistant/chunk","seq":6,"time":1785974400007,"data":{"turn":1,"step":1,"chunk":{"type":"finish","reason":{"kind":"tool-calls"}}}}
+{"type":"assistant/chunk","seq":7,"time":1785974400008,"data":{"turn":1,"step":2,"chunk":{"type":"block-start","index":0,"blockType":"text"}}}
+{"type":"assistant/chunk","seq":8,"time":1785974400009,"data":{"turn":1,"step":2,"chunk":{"type":"text-delta","index":0,"text":"ANCHORED_STANDARD_OK"}}}
+{"type":"assistant/chunk","seq":9,"time":1785974400010,"data":{"turn":1,"step":2,"chunk":{"type":"block-end","index":0,"block":{"type":"text","text":"ANCHORED_STANDARD_OK"}}}}
+{"type":"assistant/chunk","seq":10,"time":1785974400011,"data":{"turn":1,"step":2,"chunk":{"type":"usage","usage":{"inputTokens":10,"outputTokens":1}}}}
+{"type":"assistant/chunk","seq":11,"time":1785974400012,"data":{"turn":1,"step":2,"chunk":{"type":"finish","reason":{"kind":"stop"}}}}

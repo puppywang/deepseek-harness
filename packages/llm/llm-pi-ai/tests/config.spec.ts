@@ -35,6 +35,12 @@ describe('reasoning schema boundary', () => {
   it('rejects a thinking format outside the offered set', () => {
     expect(configWith({ compat: { thinkingFormat: 'quantum' } })).toThrow(/expected/)
   })
+
+  it('keeps supportsDeveloperRole on the compat profile', () => {
+    type Materialized = { providers: Record<string, { models?: { compat?: { supportsDeveloperRole?: boolean } }[] }> }
+    const withFalse = configWith({ compat: { supportsDeveloperRole: false } })() as Materialized
+    expect(withFalse.providers['acme-gateway']?.models?.[0]?.compat?.supportsDeveloperRole).toBe(false)
+  })
 })
 
 describe('modality schema boundary', () => {

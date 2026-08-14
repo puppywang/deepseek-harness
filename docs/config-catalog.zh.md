@@ -1038,19 +1038,22 @@ export interface PiAiModelProfile {
 export type PiAiModelOverride = Omit<PiAiModelProfile, 'id'>
 
 /**
- * Reasoning-dispatch compatibility switches, set on the route (its models'
- * default) or per model (winning over the route). Only the switches pi-ai's
- * reasoning dispatch reads are offered; the rest of pi-ai's compat surface
- * keeps its baseURL-derived auto-detection. pi-ai types both fields only on
- * `OpenAICompletionsCompat` — the other wire protocols define their reasoning
- * fields in the protocol itself — so resolution rejects a model-level switch
- * anywhere else, while a route-level default skips past models it cannot fit.
+ * Compatibility switches for an OpenAI-compatible endpoint whose URL names no
+ * known provider, set on the route (its models' default) or per model (winning
+ * over the route). Only the switches a private gateway must be able to correct
+ * are offered; the rest of pi-ai's compat surface keeps its baseURL-derived
+ * auto-detection. pi-ai types all three fields only on `OpenAICompletionsCompat`
+ * — the other wire protocols define their reasoning and role conventions in the
+ * protocol itself — so resolution rejects a model-level switch anywhere else,
+ * while a route-level default skips past models it cannot fit.
  */
 export interface PiAiCompatProfile {
   /** Reasoning parameter format the endpoint expects; absent keeps the catalog entry's, then pi-ai's baseURL-derived guess. */
   thinkingFormat?: PiAiThinkingFormat
   /** Whether the endpoint accepts `reasoning_effort`; absent keeps the catalog entry's, then pi-ai's baseURL-derived guess. */
   supportsReasoningEffort?: boolean
+  /** Whether the endpoint accepts the `developer` message role, which pi-ai uses for the system prompt of a reasoning model; `false` sends `system`. Absent keeps the catalog entry's, then pi-ai's baseURL-derived guess. */
+  supportsDeveloperRole?: boolean
 }
 
 /** One request modality a pi-ai model may accept. */
