@@ -6,11 +6,25 @@ function assertFile(path, description) {
   if (!existsSync(path)) throw new Error(`desktop package is missing ${description}: ${path}`)
 }
 
-module.exports = async function verifyDesktopPackage(context) {
+/**
+ * @param {{ appOutDir: string, electronPlatformName: string, packager?: { appInfo?: { productFilename?: string } } }} context
+ * @returns {string}
+ */
+function resolveResourcesRoot(context) {
+  if (context.electronPlatformName !== 'darwin') return join(context.appOutDir, 'resources')
+
+  const productFilename = context.packager?.appInfo?.productFilename
+  if (typeof productFilename !== 'string' || productFilename.length === 0) {
+    throw new Error('desktop package verification requires the macOS product filename')
+  }
+  return join(context.appOutDir, `${productFilename}.app`, 'Contents', 'Resources')
+}
+
+async function verifyDesktopPackage(context) {
   const { DSH_BOOT_RUNTIME_PACKAGES: bootPackages, runtimePackageRoot } = await import(
     pathToFileURL(join(__dirname, 'desktop-runtime-packages.mjs')).href,
   )
-  const resourcesRoot = join(context.appOutDir, 'resources')
+  const resourcesRoot = resolveResourcesRoot(context)
   const runtimeRoot = join(resourcesRoot, 'dsh-runtime')
   const nodeName = context.electronPlatformName === 'win32' ? 'node.exe' : 'node'
 
@@ -29,3 +43,6 @@ module.exports = async function verifyDesktopPackage(context) {
 
   process.stdout.write(`desktop package verified: ${bootPackages.length} boot packages in ${resourcesRoot}\n`)
 }
+
+module.exports = verifyDesktopPackage
+module.exports.resolveResourcesRoot = resolveResourcesRoot

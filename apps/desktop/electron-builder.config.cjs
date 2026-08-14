@@ -8,6 +8,7 @@ module.exports = {
   productName: 'DeepSeek Harness',
   artifactName: 'DeepSeek-Harness-${version}-${os}-${arch}.${ext}',
   copyright: 'Copyright © DeepSeek',
+  homepage: 'https://github.com/deepseek-ai/deepseek-harness',
   icon: path.join(repositoryRoot, 'apps/web/public/favicon.svg'),
   asar: true,
   compression: 'maximum',
@@ -60,6 +61,7 @@ module.exports = {
   },
   linux: {
     category: 'Development',
+    maintainer: 'DeepSeek',
     target: ['AppImage', 'deb'],
     executableName: 'deepseek-harness',
   },
