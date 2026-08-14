@@ -50,6 +50,8 @@ Windows NSIS 安装器默认展开原生详细信息区域，并在解压压缩�
 
 GitHub Actions 桌面发布工作流从 `dsh-v<version>` 标签构建 Windows、macOS 和 Linux 制品，并把它们附加到 GitHub Release。Windows 签名读取 `WIN_CSC_LINK` 和 `WIN_CSC_KEY_PASSWORD`；macOS 签名及公证读取 `CSC_LINK`、`CSC_KEY_PASSWORD`、`APPLE_ID`、`APPLE_APP_SPECIFIC_PASSWORD` 和 `APPLE_TEAM_ID`。这些值只放在仓库或环境 Secret 中，绝不提交到代码库。没有 Secret 时可以构建本地未签名安装包；受保护的正式签名任务在缺少所需 Secret 时失败。
 
+GitLab CI 使用同一个 `dsh-v<version>` 标签并行运行原生 Windows、macOS 和 Linux 打包任务，并将各平台安装包作为 Job Artifact 提供下载。如果 GitLab runner 标签不同于默认值，请设置 `DESKTOP_WINDOWS_RUNNER_TAG`、`DESKTOP_MACOS_RUNNER_TAG` 和 `DESKTOP_LINUX_RUNNER_TAG`；签名输入应继续保存在受保护的 CI 变量中。
+
 ## 范围
 
 这个桌面包包含启动、单实例聚焦、启动诊断、DevTools 模式、由 Electron 负责的目录和路径打开、外部链接交接、下载保存、安装包、CI 签名制品、GitHub Release 更新和子进程回收。系统托盘和通用 IPC fetch 载体仍属于独立扩展；这些能力必须通过窄化的主进程桥接接入，不能把 Node.js 暴露给 renderer。
