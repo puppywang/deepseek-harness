@@ -4,6 +4,7 @@
   "private": true,
   "description": "Electron desktop shell for DeepSeek Harness",
   "author": "DeepSeek",
+  "homepage": "https://github.com/deepseek-ai/deepseek-harness",
   "license": "MIT",
   "type": "module",
   "main": "lib/main.js",

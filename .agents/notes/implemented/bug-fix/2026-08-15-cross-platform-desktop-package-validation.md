@@ -10,13 +10,13 @@ Electron Builder places `app.asar` directly under `resources` on Windows and Lin
 
 ## Decision
 
-The desktop builder configuration declares the repository homepage and an explicit Linux maintainer. The package verifier resolves its resource root from the Electron platform: macOS uses `packager.appInfo.productFilename` to locate the application bundle, while Windows and Linux use the flat `appOutDir/resources` directory. All package checks continue to run against that resolved root, including `app.asar`, the bundled Node runtime, the CLI entry, and the boot package manifests.
+The desktop package manifest declares the repository homepage, and the builder configuration declares an explicit Linux maintainer. The homepage stays in the package manifest because electron-builder 26 rejects it as a root configuration property. The package verifier resolves its resource root from the Electron platform: macOS uses `packager.appInfo.productFilename` to locate the application bundle, while Windows and Linux use the flat `appOutDir/resources` directory. All package checks continue to run against that resolved root, including `app.asar`, the bundled Node runtime, the CLI entry, and the boot package manifests.
 
 ## Alternatives considered
 
 - **Hardcode `DeepSeek Harness.app` in the verifier** — rejected: the product filename is already owned by Electron Builder and must remain the source for the bundle path if branding changes.
 - **Skip the package verifier on macOS** — rejected: the macOS artifact needs the same runtime and boot-package guarantees as the other platforms.
-- **Rely on package.json metadata alone for Linux** — rejected: the Linux package requirements are part of the Electron Builder configuration, so the required homepage and maintainer are declared at that boundary.
+- **Put the homepage in the Electron Builder root configuration** — rejected: electron-builder 26 rejects `homepage` in that object; the package manifest is its metadata source, while the maintainer remains an explicit Linux option.
 
 ## Consequences
 

@@ -11,8 +11,10 @@ const { resolveResourcesRoot } = require('./verify-desktop-package.cjs') as {
   }) => string
 }
 const desktopConfig = require('../apps/desktop/electron-builder.config.cjs') as {
-  homepage?: string
   linux?: { maintainer?: string }
+}
+const desktopPackage = require('../apps/desktop/package.json') as {
+  homepage?: string
 }
 
 describe('desktop package verification', () => {
@@ -37,7 +39,7 @@ describe('desktop package verification', () => {
   })
 
   it('declares the metadata required by Linux deb packaging', () => {
-    expect(desktopConfig.homepage).toBe('https://github.com/deepseek-ai/deepseek-harness')
+    expect(desktopPackage.homepage).toBe('https://github.com/deepseek-ai/deepseek-harness')
     expect(desktopConfig.linux?.maintainer).toBe('DeepSeek')
   })
 })

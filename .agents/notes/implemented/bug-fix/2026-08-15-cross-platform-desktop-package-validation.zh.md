@@ -10,13 +10,13 @@ Electron Builder 在 Windows 和 Linux 上把 `app.asar` 直接放在 `resources
 
 ## 决策
 
-桌面构建配置声明仓库主页和明确的 Linux 维护者。安装包校验器按 Electron 平台解析资源根目录：macOS 使用 `packager.appInfo.productFilename` 定位应用包，Windows 和 Linux 使用扁平的 `appOutDir/resources` 目录。所有安装包校验继续针对解析后的根目录执行，包括 `app.asar`、内置 Node 运行时、CLI 入口和启动包清单。
+桌面包的 package manifest 声明仓库主页，构建配置声明明确的 Linux 维护者。主页保留在 package manifest 中，因为 electron-builder 26 会拒绝把它作为根配置字段。安装包校验器按 Electron 平台解析资源根目录：macOS 使用 `packager.appInfo.productFilename` 定位应用包，Windows 和 Linux 使用扁平的 `appOutDir/resources` 目录。所有安装包校验继续针对解析后的根目录执行，包括 `app.asar`、内置 Node 运行时、CLI 入口和启动包清单。
 
 ## 考虑过的替代方案
 
 - **在校验器中硬编码 `DeepSeek Harness.app`**——否决：应用包名称已经由 Electron Builder 的 product filename 负责；品牌变化时应继续使用同一来源定位路径。
 - **在 macOS 上跳过安装包校验**——否决：macOS 制品与其他平台一样需要保证运行时和启动包完整。
-- **只依赖 package.json 的 Linux 元数据**——否决：Linux 包要求属于 Electron Builder 配置边界，因此直接在该配置中声明所需的主页和维护者。
+- **把主页放进 Electron Builder 根配置**——否决：electron-builder 26 会拒绝该对象中的 `homepage` 字段；package manifest 负责提供元数据，维护者仍作为 Linux 选项显式声明。
 
 ## 后果
 

@@ -36,7 +36,7 @@ Windows 完成目录打包后，可以运行 `pnpm desktop:launch:smoke:win`，�
 
 Windows NSIS 安装器默认展开原生详细信息区域，并在解压压缩后的应用负载期间使用不会倒退的循环进度条。这样不会把 NSIS 按阶段计算的百分比误认为整体百分比；底部区域还会显示准备安装和最终配置阶段。
 
-每个打包命令都会在 Electron Builder 之前审计运行时的静态及配置导入，并对内置的 `dsh web` 执行冒烟测试；Electron Builder 的 `afterPack` 还会再次检查安装包内的启动包清单，并解析 macOS 应用包特有的 resources 路径。Linux `.deb` 输出显式声明打包器要求的项目主页和维护者元数据。生产运行时会移除 source map、调试符号、异平台可选 native 包和未使用的原生 prebuild，同时保留目标平台所需的原生模块。桌面壳不会把 `node_modules/**` 作为 Electron 的全量 `asarUnpack` 规则；外置运行时是因为独立 Node 子进程不能直接读取 `app.asar`。
+每个打包命令都会在 Electron Builder 之前审计运行时的静态及配置导入，并对内置的 `dsh web` 执行冒烟测试；Electron Builder 的 `afterPack` 还会再次检查安装包内的启动包清单，并解析 macOS 应用包特有的 resources 路径。桌面包的 package manifest 提供项目主页，Linux 目标显式声明 `.deb` 输出所需的维护者元数据。生产运行时会移除 source map、调试符号、异平台可选 native 包和未使用的原生 prebuild，同时保留目标平台所需的原生模块。桌面壳不会把 `node_modules/**` 作为 Electron 的全量 `asarUnpack` 规则；外置运行时是因为独立 Node 子进程不能直接读取 `app.asar`。
 
 ## 运行约定
 
