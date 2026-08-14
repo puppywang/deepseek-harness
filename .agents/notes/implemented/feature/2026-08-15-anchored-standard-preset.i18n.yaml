@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-anchored-standard-preset.md
-2026-08-15-anchored-standard-preset.md: b8adf2108afe7f86ada05ed1c388271c4034a01b
-2026-08-15-anchored-standard-preset.zh.md: 068aaa35dc8000e292d5a7d841ce6a6c15a34d70
+2026-08-15-anchored-standard-preset.md: ff30c950f539a362ef9120357c5ee057245fa63a
+2026-08-15-anchored-standard-preset.zh.md: 3ac4c986facbb1de39566fc4be3644742cdfad27

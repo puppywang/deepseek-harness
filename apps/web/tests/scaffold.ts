@@ -248,7 +248,9 @@ export interface LaunchOptions {
   }
   /**
    * Replace the roster the scaffold mounts by default (the shipped directory
-   * at `system` trust, default `standard`). Supply this only to change WHICH
+   * at `system` trust, harness default `standard` — stable for replay goldens;
+   * the shipped deployment default is pinned by `apps/cli/tests/web-agent-presets.e2e.ts`).
+   * Supply this only to change WHICH
    * presets a scenario sees — a writable user root, a different default —
    * never to turn the roster on: without one every session composes an agent
    * with no tools, no persona, and no token meter, which is not a shape the

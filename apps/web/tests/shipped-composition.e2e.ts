@@ -84,7 +84,9 @@ it('assembles the shipped Web catalog, file-reference guidance, and confined acc
   expect(ctx.tools.schemas().map(schema => schema.name)).toEqual([])
   const handle = await ctx.agents.create({
     sessionId: SessionId('shipped-composition'),
-    setup: agentCtx => ctx.agentPresets.mount(agentCtx).then(() => undefined),
+    // `standard` composes the full-prompt reference catalog; the deployment
+    // default is pinned separately by the real-bundle preset e2e.
+    setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
   })
   try {
     const names = ctx.tools.schemas(handle.agent).map(schema => schema.name).sort()
@@ -132,7 +134,7 @@ it('lets a preset producer reach the background-job registry', async () => {
   const handle = await ctx.agents.create({
     sessionId: SessionId('shipped-background-job'),
     meta: { cwd: scaffold.workspaceCwd },
-    setup: agentCtx => ctx.agentPresets.mount(agentCtx).then(() => undefined),
+    setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
   })
   try {
     const signal = new AbortController().signal

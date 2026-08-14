@@ -1052,7 +1052,10 @@ export interface PiAiCompatProfile {
   thinkingFormat?: PiAiThinkingFormat
   /** Whether the endpoint accepts `reasoning_effort`; absent keeps the catalog entry's, then pi-ai's baseURL-derived guess. */
   supportsReasoningEffort?: boolean
-  /** Whether the endpoint accepts the `developer` message role, which pi-ai uses for the system prompt of a reasoning model; `false` sends `system`. Absent keeps the catalog entry's, then pi-ai's baseURL-derived guess. */
+  /** Whether the endpoint accepts the `developer` message role, which pi-ai
+   * uses for a reasoning model's system prompt; `false` sends `system`.
+   * Absent keeps the catalog entry's, then pi-ai's baseURL-derived guess.
+   */
   supportsDeveloperRole?: boolean
 }
 

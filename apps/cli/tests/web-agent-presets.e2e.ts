@@ -104,7 +104,7 @@ async function bootWeb(
     {
       id: 'agent-presets',
       config: {
-        default: 'standard',
+        default: 'anchored-standard',
         roots: [{ path: join(CONFIG_DIR, 'agent-presets'), trust: 'system' }],
         includeUserRoot: false,
       },
@@ -191,7 +191,7 @@ describe('the shipped Web composition', () => {
 
     expect(listed.map(preset => preset.id).sort()).toEqual(['anchored-standard', 'code', 'cordis', 'minimal', 'standard'])
     expect(listed.every(preset => preset.trust === 'system')).toBe(true)
-    expect(ctx.agentPresets.defaultId).toBe('standard')
+    expect(ctx.agentPresets.defaultId).toBe('anchored-standard')
   })
 
   it('composes the full agent from `standard`', async () => {
@@ -823,7 +823,7 @@ describe('authoring a preset on the shipped composition', () => {
  */
 describe('the default preset as a user setting', () => {
   it('composes an unnamed session from the stored default, not the composed one', async () => {
-    expect(ctx.agentPresets.defaultId).toBe('standard')
+    expect(ctx.agentPresets.defaultId).toBe('anchored-standard')
 
     await ctx.settings.update(settingsNamespace(SETTINGS_NAMESPACE), { default: 'minimal' })
     try {
@@ -835,7 +835,8 @@ describe('the default preset as a user setting', () => {
       })
       try {
         // `mount()` with no id resolves the effective default. Two tools, not
-        // `standard`'s catalog: the setting decided the composition.
+        // `anchored-standard`'s full registration: the setting decided the
+        // composition.
         expect(toolNames(ctx, handle.agent)).toEqual(['bash', 'str_replace_editor'])
       } finally {
         await handle.dispose()
@@ -847,7 +848,7 @@ describe('the default preset as a user setting', () => {
       await ctx.settings.replace(settingsNamespace(SETTINGS_NAMESPACE), {})
     }
 
-    expect(ctx.agentPresets.defaultId).toBe('standard')
+    expect(ctx.agentPresets.defaultId).toBe('anchored-standard')
   })
 })
 

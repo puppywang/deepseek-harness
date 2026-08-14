@@ -10,10 +10,12 @@ The `standard` preset sends a long templated system prompt — a coding-agent pe
 
 ## Decision
 
-Ship an opt-in `anchored-standard` agent preset at `apps/cli/config/agent-presets/anchored-standard/` with `order: 5`; `default` stays `standard`. It is the `standard` composition with two deltas:
+Ship an opt-in `anchored-standard` agent preset at `apps/cli/config/agent-presets/anchored-standard/` with `order: 5`. It is the `standard` composition with two deltas:
 
 1. `persona` sets `complete: true`, `includeRuntimeContext: false`, and the text `You are a helpful software engineer assistant.` — byte-identical to the `minimal` preset's system prompt.
 2. A `tool-bootstrap` row references `./tool-bootstrap.mjs` with `shellTools: [bash, pwsh]` and `commonTools: [read]`.
+
+The shipped `agentPresets.default` is now `anchored-standard`; the [default-switch note](2026-08-15-anchored-standard-default.md) owns that reversal of the original opt-in default.
 
 `tool-bootstrap.mjs` is a function plugin (`name: 'anchored-tool-bootstrap'`, `inject: ['systemPrompt', 'tools']`). On `system-prompt/assemble` it returns the assembly unchanged once the agent's session records a durable `tool/call`; before that it reduces the model-visible tool list to one platform shell (whichever of `bash`/`pwsh` the catalog contains) plus `read`. A scoped monotonic `tools.guard()` applies the same set to model-direct execution, so a hidden tool cannot be called through the registry before promotion; nested transport calls remain available to the tool that owns them. The full `standard` catalog stays registered, and promotion is read from the agent's own durable session events, so each session bootstraps independently. A catalog that holds zero or more than one configured shell, or that lacks a configured common tool, fails loud instead of proceeding on the wrong surface.
 
@@ -25,13 +27,13 @@ The plugin is plain ESM shipped inside the preset directory. The `config` direct
 
 ## Alternatives considered
 
-- **Make `anchored-standard` the default preset now** — rejected: the supporting evidence is two benchmark runs, and the promotion trigger leaves the agent on two tools when the first turn makes no tool call. Defaulting should wait for stronger evidence and the remaining limitations.
+- **Make `anchored-standard` the default preset now** — rejected when this note shipped: the supporting evidence is two benchmark runs, and the promotion trigger leaves the agent on two tools when the first turn makes no tool call. Defaulting should wait for stronger evidence and the remaining limitations. Reversed by the [default-switch note](2026-08-15-anchored-standard-default.md).
 - **Promote `tool-bootstrap` to a first-class `@deepseek-ai/dsh-tool-bootstrap` package** — deferred: it is the clean home (typecheck, coverage gate, invariant companion, and a bare package name in the composition), but it adds a package and a CLI dependency for an opt-in experiment; do it when the preset moves toward default.
 - **Ship only the prompt delta without the bootstrap** — rejected: the prompt change alone leaves the full catalog visible from the first request, which is not what the experiment measures.
 
 ## Consequences
 
-- The roster gains one experimental entry after the shipped four; `default: standard` is unchanged, so existing sessions are unaffected.
+- The roster gains one experimental entry after the shipped four. Existing sessions are unaffected; the shipped default later moved to this preset in the [default-switch note](2026-08-15-anchored-standard-default.md).
 - Before promotion, the bootstrap narrows the model-visible tool list and denies model-direct calls to other registered tools. The full registration remains available to nested transport calls and after promotion.
 - The `anchored-standard` composition is a near-copy of `standard` and must be updated in lockstep with it.
 - The `.mjs` plugin is covered by focused tests, the real CLI/Web composition test, and the Web keyless snapshot, but not by the package coverage gate because it is not a workspace package.
