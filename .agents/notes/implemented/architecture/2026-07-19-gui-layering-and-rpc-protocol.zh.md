@@ -30,7 +30,7 @@ Status: implemented
 - `apps/` 作为对外导出的应用入口，可以由 Client / Host 混合组装。
     - `apps/web`（`dsh-web-frontend`）是 vite 应用：`dsh-client-web` 导出的壳 API 之上的一层薄 `main.ts`。
     - `apps/cli`（`@deepseek-ai/dsh`）分发命令：`dsh web` = Host + webserver + 构建出的 `dsh-web-frontend` dist；`dsh --profile headless` = [直接使用核心 Agent／Session 的入口](2026-08-09-headless-direct-core-entry-point.md)，不含 Host、HTTP 或浏览器层。
-    - `apps/desktop` 是私有 Electron 壳：开发环境使用系统 Node，打包后使用内置 Node runtime 和生产版 `dsh` 部署，在 loopback 上启动构建好的 `dsh web` 并加载现有 Web client；Electron 主进程通过 Host 发起的带令牌 loopback 请求负责桌面专属的目录选择、路径打开、外部链接交接、下载保存对话框和 GitHub Release 更新生命周期；IPC fetch 载体仍是未来的传输扩展。
+    - `apps/desktop` 是私有 Electron 壳：开发环境使用系统 Node，打包后使用内置 Node runtime 和生产版 `dsh` 部署，在 loopback 上启动构建好的 `dsh web` 并加载现有 Web client；Electron 主进程负责自动隐藏的原生应用菜单，并通过 Host 发起的带令牌 loopback 请求负责桌面专属的目录选择、路径打开、外部链接交接、下载保存对话框和 GitHub Release 更新生命周期；IPC fetch 载体仍是未来的传输扩展。
 
 ```
 apps/*  (applications: apps/web = vite app, apps/cli = bin dispatch, apps/desktop = Electron shell)
@@ -216,7 +216,7 @@ export type ResponseValue<K> =
 | `InProcessApiClient` | apiproxy 本包 | 注入的 `{ fetch }` handler | **同构点**：`new InProcessApiClient(toFetchHandler(api))` 全程不过网络但真跑 wire 序列化/zod/SSE 帧；载体测试与调用方可以在不打开端口的情况下运行这套协议，而产品 `dsh --profile headless` 直接驱动 core |
 | `WebApiClient` | dsh-client-connection | `globalThis.fetch` 上行 + 每逻辑流一条同源 WebSocket 下行 | 浏览器客户端；物理边界见 [WebSocket 下行载体](2026-08-04-websocket-downlink-carrier.md) |
 | `FixtureApiClient` | dsh-client-connection | 不用（协议层覆写） | 无 server 的 UI 开发（`?fixture`）：覆写 `callUnary`/`openMux`/`openHost`/`respond` 虚方法，自己就是假 server（帧 rpcId 由它 mint，语义自洽） |
-| Electron 桌面壳 | `apps/desktop` | 通过 loopback HTTP 与 WebSocket 使用现有 `WebApiClient` | 开发环境使用系统 Node，打包后使用内置 Node/runtime 部署启动 `dsh web` 并复用 Web 载体；壳负责窗口、子进程生命周期、桌面专属原生交互、外部链接交接、下载保存对话框和 GitHub Release 更新生命周期 |
+| Electron 桌面壳 | `apps/desktop` | 通过 loopback HTTP 与 WebSocket 使用现有 `WebApiClient` | 开发环境使用系统 Node，打包后使用内置 Node/runtime 部署启动 `dsh web` 并复用 Web 载体；壳负责窗口、自动隐藏的原生应用菜单、子进程生命周期、桌面专属原生交互、外部链接交接、下载保存对话框和 GitHub Release 更新生命周期 |
 | IPC 桥子类 | Electron 壳 | IPC 序列化往返 | 未来的传输选项；只需替换 `doFetch`，约定与基类保持不变 |
 
 ## 怎么扩展（操作清单）

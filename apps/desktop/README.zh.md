@@ -40,7 +40,7 @@ Windows NSIS 安装器默认展开原生详细信息区域，并在解压压缩�
 
 ## 运行约定
 
-子进程绑定 `127.0.0.1` 并使用端口 `0`，因此桌面壳不会把 Harness HTTP 服务暴露到指定网络端口。桌面进程只有在收到 URL 后再通过有限次数的 HTTP readiness probe 确认服务可访问，并对启动失败重试；运行中异常退出时最多自动重启三次。桌面进程通过该 loopback URL 复用现有 Web 载体，并拒绝跳转到分配来源之外的地址。`http`、`https` 和 `mailto` 链接的页面跳转与新窗口请求会由 Electron 主进程交给操作系统处理。桌面桥同样只绑定 `127.0.0.1`、使用操作系统分配的端口，并为目录选择和路径打开分别要求每次启动随机生成的令牌；桥地址只传给 Host 子进程，不暴露给 renderer。Host 的路径打开请求使用 Electron 的 `shell.openPath`；macOS 文本编辑请求使用 `open -t`。Harness 页面发起的下载使用 Electron 保存对话框，并对建议文件名进行清理。打包版本使用 `resources/node-runtime` 下的 Node 运行时；开发版本依次使用 `DSH_NODE_BIN`、`npm_node_execpath` 或系统 `node`。`DSH_HOME` 用于选择已有 Harness 数据目录；未设置时，数据放在 Electron 用户数据目录下的 `dsh-home`。`DSH_CLI_ENTRY` 可以覆盖内置 CLI 入口，`DSH_RUNTIME_ROOT` 可以覆盖内置 Harness 运行时目录。Electron 默认 session 会拒绝 renderer 发起的权限请求，仅放行 Web UI 复制控件所需的 `clipboard-sanitized-write` 权限检查。Windows 退出时会先终止 Harness 进程树，失败后才回退到直接终止子进程；macOS 关闭最后一个窗口后会继续保留应用和 Harness，以便再次激活时重建窗口。
+子进程绑定 `127.0.0.1` 并使用端口 `0`，因此桌面壳不会把 Harness HTTP 服务暴露到指定网络端口。桌面进程只有在收到 URL 后再通过有限次数的 HTTP readiness probe 确认服务可访问，并对启动失败重试；运行中异常退出时最多自动重启三次。桌面进程通过该 loopback URL 复用现有 Web 载体，并拒绝跳转到分配来源之外的地址。`http`、`https` 和 `mailto` 链接的页面跳转与新窗口请求会由 Electron 主进程交给操作系统处理。原生应用菜单只承载平台级功能：Windows 和 Linux 默认隐藏菜单栏，按 Alt 呼出；macOS 保留系统菜单以及剪贴板快捷键所需的编辑角色；帮助菜单链接 GitHub、文档、版本下载和 LINUX DO；重新加载与开发者工具仅在开发版出现。产品操作继续留在 Web UI，不在原生菜单里复制。桌面桥同样只绑定 `127.0.0.1`、使用操作系统分配的端口，并为目录选择和路径打开分别要求每次启动随机生成的令牌；桥地址只传给 Host 子进程，不暴露给 renderer。Host 的路径打开请求使用 Electron 的 `shell.openPath`；macOS 文本编辑请求使用 `open -t`。Harness 页面发起的下载使用 Electron 保存对话框，并对建议文件名进行清理。打包版本使用 `resources/node-runtime` 下的 Node 运行时；开发版本依次使用 `DSH_NODE_BIN`、`npm_node_execpath` 或系统 `node`。`DSH_HOME` 用于选择已有 Harness 数据目录；未设置时，数据放在 Electron 用户数据目录下的 `dsh-home`。`DSH_CLI_ENTRY` 可以覆盖内置 CLI 入口，`DSH_RUNTIME_ROOT` 可以覆盖内置 Harness 运行时目录。Electron 默认 session 会拒绝 renderer 发起的权限请求，仅放行 Web UI 复制控件所需的 `clipboard-sanitized-write` 权限检查。Windows 退出时会先终止 Harness 进程树，失败后才回退到直接终止子进程；macOS 关闭最后一个窗口后会继续保留应用和 Harness，以便再次激活时重建窗口。
 
 ## 自动更新
 
@@ -54,4 +54,4 @@ GitLab CI 使用同一个 `dsh-v<version>` 标签并行运行原生 Windows、ma
 
 ## 范围
 
-这个桌面包包含启动、单实例聚焦、启动诊断、DevTools 模式、由 Electron 负责的目录和路径打开、外部链接交接、下载保存、安装包、CI 签名制品、GitHub Release 更新和子进程回收。系统托盘和通用 IPC fetch 载体仍属于独立扩展；这些能力必须通过窄化的主进程桥接接入，不能把 Node.js 暴露给 renderer。
+这个桌面包包含启动、单实例聚焦、启动诊断、DevTools 模式、自动隐藏的原生应用菜单、由 Electron 负责的目录和路径打开、外部链接交接、下载保存、安装包、CI 签名制品、GitHub Release 更新和子进程回收。系统托盘和通用 IPC fetch 载体仍属于独立扩展；这些能力必须通过窄化的主进程桥接接入，不能把 Node.js 暴露给 renderer。

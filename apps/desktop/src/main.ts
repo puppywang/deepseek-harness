@@ -21,6 +21,7 @@ import {
   type OpenPathIntent,
 } from './desktop-logic.js'
 import { buildContextMenuTemplate } from './context-menu.js'
+import { buildApplicationMenuTemplate } from './menu.js'
 import { stopChildProcess } from './process-lifecycle.js'
 
 const require = createRequire(import.meta.url)
@@ -526,6 +527,16 @@ function installPermissionHandling(): void {
   })
 }
 
+function installApplicationMenu(): void {
+  const template = buildApplicationMenuTemplate({
+    platform: process.platform,
+    zh: app.getLocale().toLowerCase().startsWith('zh'),
+    developerTools: process.argv.includes('--dev') || !app.isPackaged,
+    openExternal: openExternalUrl,
+  })
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+}
+
 function createMainWindow(url: string): void {
   const allowedOrigin = new URL(url).origin
   const window = new BrowserWindow({
@@ -534,6 +545,9 @@ function createMainWindow(url: string): void {
     minWidth: 960,
     minHeight: 640,
     backgroundColor: '#111318',
+    // Windows and Linux hide the menu bar until Alt is pressed, keeping the
+    // product surface in the Web UI; macOS ignores this and keeps its menu.
+    autoHideMenuBar: process.platform !== 'darwin',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -585,6 +599,7 @@ async function showStartupError(error: unknown): Promise<void> {
 async function boot(): Promise<void> {
   try {
     installPermissionHandling()
+    installApplicationMenu()
     desktopBridge = await startDesktopBridge()
     installDownloadHandling()
     harnessUrl = await startHarness(desktopBridge)
