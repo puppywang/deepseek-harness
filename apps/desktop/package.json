@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-desktop",
-  "version": "0.1.0-rc.7",
+  "version": "0.1.0-rc.8",
   "private": true,
   "description": "Electron desktop shell for DeepSeek Harness",
   "author": "DeepSeek",
