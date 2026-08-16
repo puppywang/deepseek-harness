@@ -46,6 +46,7 @@ pnpm dsh web
 
 - 欢迎通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告。
 - 为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现。
+- 社区插件可以扩展 Web UI，例如 [`dsh-plugin-file-explorer`](https://github.com/bearllfleed/Dsh-FileExplorer) 提供 VS Code 风格的工作区文件浏览器、可编辑标签页与 Markdown 预览。安装：`dsh plugin --profile web add dsh-plugin-file-explorer`，并在 profile 的 `cordis.patch.yml` 中启用对应行。
 - 本项目已获 [LINUX DO](https://linux.do/) 社区认可。
 - 欢迎加入 DeepSeek Harness 企微群：扫码添加企微小助手并填写入群问卷，完成后小助手会邀请你入群。
 

@@ -46,6 +46,7 @@ pnpm dsh web
 
 - Feel free to submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).
 - Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
+- Community plugins extend the Web UI, for example [`dsh-plugin-file-explorer`](https://github.com/bearllfleed/Dsh-FileExplorer) adds a VS Code-style workspace file explorer with editable tabs and Markdown preview. Install with `dsh plugin --profile web add dsh-plugin-file-explorer` and enable its row in the profile's `cordis.patch.yml`.
 - Join <a href="https://discord.gg/Ycq5dCaS4">DeepSeek Harness Discord community</a>.
 - This project is recognized by the [LINUX DO](https://linux.do/) community.
 
