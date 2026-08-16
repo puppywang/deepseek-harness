@@ -74,7 +74,7 @@ export interface DeepSeekModelsValidationFailure {
   index: number
   /** Message key owned by the Models settings section. */
   key: 'modelIdRequired' | 'modelIdDuplicate' | 'modelNameInvalid' | 'modelContextInvalid'
-  | 'modelMaxTokensInvalid'
+  | 'modelMaxTokensInvalid' | 'modelReasoningEffortsInvalid'
 }
 
 /** Convert a schema-validated catalog value into records without dropping hidden fields. */
@@ -117,6 +117,22 @@ export function validateDeepSeekModels(value: unknown): DeepSeekModelsValidation
     if (maxTokens !== undefined
       && (typeof maxTokens !== 'number' || !Number.isInteger(maxTokens) || maxTokens <= 0)) {
       return { index, key: 'modelMaxTokensInvalid' }
+    }
+    const efforts = model['reasoningEfforts']
+    if (efforts !== undefined && efforts !== false) {
+      const entries = efforts !== null && typeof efforts === 'object' && !Array.isArray(efforts)
+        ? Object.entries(efforts as Record<string, unknown>)
+        : undefined
+      // `off: null` is the one valueless entry `llm-pi-ai` accepts; every other
+      // level needs a non-empty wire value, and an "off" alone offers nothing.
+      const valid = entries !== undefined
+        && entries.length > 0
+        && entries.some(([level]) => level !== 'off')
+        && entries.every(([level, wire]) => level.length > 0
+          && (level === 'off'
+            ? wire === null || (typeof wire === 'string' && wire.length > 0)
+            : typeof wire === 'string' && wire.length > 0))
+      if (!valid) return { index, key: 'modelReasoningEffortsInvalid' }
     }
   }
   return undefined

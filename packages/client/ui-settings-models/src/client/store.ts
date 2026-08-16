@@ -86,6 +86,29 @@ export function protocolChoices(namespace: SettingsNamespaceView | undefined): s
   return list.list.map(entry => entry.value).filter((value): value is string => typeof value === 'string')
 }
 
+/**
+ * The thinking levels a pi-ai model's `reasoningEfforts` map may name, read out
+ * of the owning namespace's own schema. The same source as {@link protocolChoices},
+ * so the choices the page offers cannot drift from the ones the adapter accepts.
+ * @param namespace - the namespace view whose schema declares the profile shape.
+ * @returns the thinking-level keys, or an empty list when the schema has none.
+ */
+export function reasoningEffortLevels(namespace: SettingsNamespaceView | undefined): string[] {
+  if (namespace === undefined) return []
+  const models = nodeAtPath(rehydrateSchema(namespace.schema), ['providers', PROBE_ROUTE, 'models'])
+  const model = (models as { inner?: { dict?: Record<string, unknown> } } | undefined)?.inner
+  const efforts = model?.dict?.['reasoningEfforts']
+  const union = (efforts as { type?: string; list?: readonly unknown[] } | undefined)
+  if (union?.type !== 'union' || union.list === undefined) return []
+  const dict = union.list.find(entry =>
+    (entry as { type?: string } | undefined)?.type === 'dict') as
+    | { sKey?: { list?: readonly { value?: unknown }[] } }
+    | undefined
+  return (dict?.sKey?.list ?? [])
+    .map(entry => entry.value)
+    .filter((value): value is string => typeof value === 'string')
+}
+
 /** The credential reference a resolved profile names (its `apiKeyEnv` field). */
 function apiKeyEnvOf(namespace: SettingsNamespaceView | undefined, path: readonly string[]): string | undefined {
   if (namespace === undefined) return undefined

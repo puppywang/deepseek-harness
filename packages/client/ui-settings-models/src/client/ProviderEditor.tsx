@@ -11,14 +11,15 @@
  * display name and wire protocol of a pi-ai route the adapter does not ship —
  * the two fields the create card asked that route for, editable here for the
  * same reason).
- * Reasoning effort is deliberately absent: it is a per-MODEL capability, and
- * the models under one provider disagree about it, so a provider-scoped
- * control can only be set to a value some of them reject. The composer's
- * model picker offers each model its own levels; `settings.yaml` keeps the
- * profile field for a deployment that knows its route. Everything else stays
- * owned by `settings.yaml`. Profile edits land as minimal `settings.mutate`
- * path ops against the stored section — the card names only the fields it can
- * see instead of rebuilding the whole subtree from a partial descriptor.
+ * Reasoning effort is a per-MODEL capability, so each pi-ai model row edits
+ * its own thinking-level map behind the row's advanced disclosure; the
+ * provider card stays scoped to fields every model on the route shares. The
+ * composer's model picker still offers each model its resolved levels;
+ * `settings.yaml` keeps the profile field for deployments that write it
+ * directly. Everything else stays owned by `settings.yaml`. Profile edits
+ * land as minimal `settings.mutate` path ops against the stored section — the
+ * card names only the fields it can see instead of rebuilding the whole
+ * subtree from a partial descriptor.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -33,7 +34,7 @@ import {
 import { apiKeyFailure } from './apiKey.ts'
 import { EditorFooter } from './EditorFooter.tsx'
 import { ModelListEditor } from './ModelListEditor.tsx'
-import { deriveKeyRef, messageOf, protocolChoices } from './store.ts'
+import { deriveKeyRef, messageOf, protocolChoices, reasoningEffortLevels } from './store.ts'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
@@ -168,6 +169,10 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
   // it rehydrates the whole section schema, so the other layouts skip it.
   const protocols = useMemo(
     () => layout === 'pi-ai' ? protocolChoices(namespace) : [],
+    [layout, namespace],
+  )
+  const reasoningLevels = useMemo(
+    () => layout === 'pi-ai' ? reasoningEffortLevels(namespace) : [],
     [layout, namespace],
   )
 
@@ -460,7 +465,13 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                   defaultMaxTokens={typeof defaultMaxTokens === 'number' ? defaultMaxTokens : undefined}
                 />
               )
-              : <ModelListEditor {...catalogProps} probe={probe} probeBlocked={keyFailure} api={api} />}
+              : <ModelListEditor
+                {...catalogProps}
+                probe={probe}
+                probeBlocked={keyFailure}
+                api={api}
+                reasoningLevels={reasoningLevels}
+              />}
           </div>
         </details>}
       </>

@@ -20,6 +20,7 @@ import type { DiscoveredModelView, IApiClient } from '@deepseek-ai/dsh-api-remot
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { formatCapacity, parseCapacity } from './DeepSeekModelsEditor.tsx'
 import type { DeepSeekModelDraft } from './DeepSeekModelsEditor.tsx'
+import { ReasoningEffortsEditor } from './ReasoningEffortsEditor.tsx'
 import { messageOf } from './store.ts'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
@@ -83,6 +84,13 @@ export interface ModelListEditorProps {
   probeBlocked?: keyof typeof en | undefined
   /** Wire face the fetch action calls. */
   api: Pick<IApiClient, 'llm'>
+  /**
+   * Thinking-level keys the owning adapter accepts, in canonical order. The
+   * per-model reasoning-effort editor renders only when this list is non-empty.
+   */
+  reasoningLevels: readonly string[]
+  /** Fields a newly added row starts with; absent rows start with an empty id. */
+  newModelTemplate?: ModelDraft
   /** Section copy. */
   t: (key: keyof typeof en) => string
   /** Disable every control (read-only deployment or a pending write). */
@@ -210,7 +218,7 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
     })
   }
 
-  const patch = (index: number, next: Record<string, string | number | undefined>): void => {
+  const patch = (index: number, next: Record<string, unknown>): void => {
     onChange(models.map((model, at) => {
       if (at !== index) return model
       // Rebuilt rather than spread over: an emptied optional field has to leave
@@ -355,9 +363,9 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
             <button
               type="button"
               className={styles['iconButton']}
-              aria-label={`${t('modelAdvanced')} ${index + 1}`}
+              aria-label={`${t('modelAdvancedPiAi')} ${index + 1}`}
               aria-expanded={expanded.has(index)}
-              title={t('modelAdvanced')}
+              title={t('modelAdvancedPiAi')}
               onClick={() => { toggleExpanded(index) }}
             >
               <IconChevron open={expanded.has(index)} />
@@ -417,6 +425,18 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
                     onChange={(event) => { editCapacity(index, 'maxTokens', event.target.value) }}
                   />
                 </label>
+                {props.reasoningLevels.length === 0
+                  ? null
+                  : (
+                    <ReasoningEffortsEditor
+                      index={index + 1}
+                      value={model['reasoningEfforts']}
+                      levels={props.reasoningLevels}
+                      disabled={disabled}
+                      t={t}
+                      onChange={(next) => { patch(index, { reasoningEfforts: next }) }}
+                    />
+                  )}
               </div>
             )
             : null}
@@ -426,7 +446,15 @@ export function ModelListEditor(props: ModelListEditorProps): ReactNode {
         type="button"
         className={styles['addModelButton']}
         disabled={disabled}
-        onClick={() => { onChange([...models, { id: '' }]) }}
+        onClick={() => {
+          const template = props.newModelTemplate ?? { id: '' }
+          const next = { ...template }
+          const efforts = template['reasoningEfforts']
+          if (efforts !== null && typeof efforts === 'object' && !Array.isArray(efforts)) {
+            next['reasoningEfforts'] = { ...efforts as Record<string, unknown> }
+          }
+          onChange([...models, next])
+        }}
       >
         {t('addModel')}
       </button>

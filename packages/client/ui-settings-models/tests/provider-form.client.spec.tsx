@@ -9,7 +9,7 @@ import { ModelsSection, providerCopy } from '../src/client/ModelsSection.tsx'
 import type { ModelsSectionInjected } from '../src/client/ModelsSection.tsx'
 import { CustomProviderCard } from '../src/client/CustomProviderCard.tsx'
 import { formatCapacity, parseCapacity } from '../src/client/DeepSeekModelsEditor.tsx'
-import { ModelsSettingsStore, deriveKeyRef, protocolChoices } from '../src/client/store.ts'
+import { ModelsSettingsStore, deriveKeyRef, protocolChoices, reasoningEffortLevels } from '../src/client/store.ts'
 import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -17,6 +17,7 @@ afterEach(cleanup)
 const t: ModelsSectionInjected['t'] = key => en[key]
 
 const PROTOCOLS = ['openai-completions', 'openai-responses', 'anthropic-messages']
+const REASONING_LEVELS = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']
 
 /** The pi-ai profile shape as the host serializes it, including the layer-1 fields. */
 const PiAiConfig = Schema.object({
@@ -31,6 +32,10 @@ const PiAiConfig = Schema.object({
       name: Schema.string(),
       contextWindow: Schema.number(),
       maxTokens: Schema.number(),
+      reasoningEfforts: Schema.union([
+        Schema.const(false),
+        Schema.dict(Schema.union([Schema.string(), Schema.const(null)]), Schema.union(REASONING_LEVELS)),
+      ]),
     })),
     reasoning: Schema.union(['off', 'high']),
   })),
@@ -163,7 +168,7 @@ function openEditor(provider: string): void {
 
 /** Open one model row's advanced fold, where the capacities live. */
 function expandModel(index: number): void {
-  fireEvent.click(screen.getByLabelText(`${en.modelAdvanced} ${index}`))
+  fireEvent.click(screen.getByLabelText(`${en.modelAdvancedPiAi} ${index}`))
 }
 
 /** The button carrying `label`, typed so its disabled/title state is readable. */
@@ -188,6 +193,27 @@ describe('protocolChoices', () => {
     const plain = { ...namespace, schema: JSON.parse(JSON.stringify(Schema.object({}).toJSON())) as unknown }
     expect(protocolChoices(plain)).toEqual([])
     await Promise.resolve()
+  })
+
+  it('reads the thinking levels out of the model schema and nothing else', () => {
+    const { namespace } = scriptedFace()
+    expect(reasoningEffortLevels(namespace)).toEqual(REASONING_LEVELS)
+    expect(reasoningEffortLevels(undefined)).toEqual([])
+    const plain = { ...namespace, schema: JSON.parse(JSON.stringify(Schema.object({}).toJSON())) as unknown }
+    expect(reasoningEffortLevels(plain)).toEqual([])
+    // A reasoningEfforts union with no dict member (only the `false` const)
+    // still has nothing to offer, and must not fall through the schema walk.
+    const noLevels = Schema.object({
+      providers: Schema.dict(Schema.object({
+        models: Schema.array(Schema.object({
+          reasoningEfforts: Schema.union([Schema.const(false)]),
+        })),
+      })),
+    })
+    expect(reasoningEffortLevels({
+      ...namespace,
+      schema: JSON.parse(JSON.stringify(noLevels.toJSON())) as unknown,
+    })).toEqual([])
   })
 })
 
@@ -536,8 +562,8 @@ describe('endpoint interrogation', () => {
     const scripted = scriptedFace()
     render(
       <CustomProviderCard
-        taken={[]} protocols={PROTOCOLS} revision={7} api={scripted.face as never}
-        t={t} readOnly={false} onClose={vi.fn()}
+        taken={[]} protocols={PROTOCOLS} reasoningLevels={REASONING_LEVELS} revision={7}
+        api={scripted.face as never} t={t} readOnly={false} onClose={vi.fn()}
       />,
     )
     expect(buttonNamed(en.fetchModels).disabled).toBe(true)
@@ -663,6 +689,7 @@ describe('hand-declared providers', () => {
       <CustomProviderCard
         taken={['openai']}
         protocols={PROTOCOLS}
+        reasoningLevels={REASONING_LEVELS}
         revision={7}
         api={scripted.face as never}
         t={t}
@@ -698,7 +725,11 @@ describe('hand-declared providers', () => {
           apiKeyEnv: 'ACME_GATEWAY_API_KEY',
           api: 'openai-completions',
           baseURL: 'https://gateway.acme.example/v1',
-          models: [{ id: 'acme-large', contextWindow: 65_536 }],
+          models: [{
+            id: 'acme-large',
+            contextWindow: 65_536,
+            reasoningEfforts: { off: 'none', low: 'low', high: 'high', max: 'max' },
+          }],
         },
       }],
       // The section this card was drafted over: a route another tab declared
@@ -706,6 +737,75 @@ describe('hand-declared providers', () => {
       expectedRevision: 7,
     })
     expect(set).toHaveBeenCalledWith({ ref: 'ACME_GATEWAY_API_KEY', value: 'gw-key' })
+  })
+
+  it('starts each custom model with the advertised context and thinking levels, and edits them', async () => {
+    const { mutate, onClose } = mountCard()
+
+    fireEvent.change(screen.getByLabelText(en.customRoute), { target: { value: 'acme-gateway' } })
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://gateway.acme.example/v1' } })
+    fireEvent.click(screen.getByRole('button', { name: en.addModel }))
+    fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'acme-large' } })
+    expandModel(1)
+
+    expect(screen.getByLabelText<HTMLInputElement>(`${en.modelContextWindow} 1`).value).toBe('1M')
+    expect(screen.getByLabelText<HTMLSelectElement>(`${en.modelReasoningLevel} 1 1`).value).toBe('off')
+    expect(screen.getByLabelText<HTMLInputElement>(`${en.modelReasoningWire} 1 1`).value).toBe('none')
+    expect(screen.getByLabelText<HTMLSelectElement>(`${en.modelReasoningLevel} 1 4`).value).toBe('max')
+
+    fireEvent.change(screen.getByLabelText(`${en.modelReasoningWire} 1 2`), { target: { value: 'low-ish' } })
+    fireEvent.click(screen.getByText(en.addReasoningLevel))
+    fireEvent.change(screen.getByLabelText(`${en.modelReasoningWire} 1 5`), { target: { value: 'minimal' } })
+    fireEvent.click(screen.getByText(en.create))
+
+    await waitFor(() => { expect(onClose).toHaveBeenCalledWith(true) })
+    expect(firstMutate(mutate).ops[0]?.value).toMatchObject({
+      models: [{
+        id: 'acme-large',
+        contextWindow: 1_000_000,
+        reasoningEfforts: {
+          off: 'none',
+          low: 'low-ish',
+          high: 'high',
+          max: 'max',
+          minimal: 'minimal',
+        },
+      }],
+    })
+  })
+
+  it('drops the thinking-level field when every level of a custom model is removed', async () => {
+    const { mutate, onClose } = mountCard()
+
+    fireEvent.change(screen.getByLabelText(en.customRoute), { target: { value: 'acme-gateway' } })
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://gateway.acme.example/v1' } })
+    fireEvent.click(screen.getByRole('button', { name: en.addModel }))
+    fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'acme-large' } })
+    expandModel(1)
+    for (const at of [4, 3, 2, 1]) {
+      fireEvent.click(screen.getByLabelText(`${en.removeReasoningLevel} 1 ${String(at)}`))
+    }
+    fireEvent.click(screen.getByText(en.create))
+
+    await waitFor(() => { expect(onClose).toHaveBeenCalledWith(true) })
+    expect(firstMutate(mutate).ops[0]?.value).toMatchObject({
+      models: [{ id: 'acme-large', contextWindow: 1_000_000 }],
+    })
+    expect((firstMutate(mutate).ops[0]?.value as { models?: Record<string, unknown>[] }).models?.[0])
+      .not.toHaveProperty('reasoningEfforts')
+  })
+
+  it('hides thinking-level editing when the namespace declares no levels', () => {
+    mountCard({ reasoningLevels: [] })
+
+    fireEvent.change(screen.getByLabelText(en.customRoute), { target: { value: 'acme-gateway' } })
+    fireEvent.change(screen.getByLabelText(en.baseUrl), { target: { value: 'https://gateway.acme.example/v1' } })
+    fireEvent.click(screen.getByRole('button', { name: en.addModel }))
+    fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'acme-large' } })
+    expandModel(1)
+
+    expect(screen.queryByLabelText(new RegExp(en.modelReasoningLevel))).toBeNull()
+    expect(screen.getByLabelText(`${en.modelContextWindow} 1`)).toBeTruthy()
   })
 
   it('scopes each card to fields a provider can actually own', async () => {
@@ -1062,12 +1162,19 @@ describe('hand-declared providers', () => {
     fireEvent.change(screen.getByLabelText(`${en.modelId} 1`), { target: { value: 'bare' } })
 
     // A listing that discloses nothing but ids is enough to create a working
-    // provider; the adapter sizes what configuration leaves out.
+    // provider; the card still starts the row with the advertised context
+    // window and thinking levels, while the rest is sized by the adapter.
     expect(buttonNamed(en.create).disabled).toBe(false)
     fireEvent.click(screen.getByText(en.create))
 
     await waitFor(() => { expect(onClose).toHaveBeenCalledWith(true) })
-    expect(firstMutate(mutate).ops[0]?.value).toMatchObject({ models: [{ id: 'bare' }] })
+    expect(firstMutate(mutate).ops[0]?.value).toMatchObject({
+      models: [{
+        id: 'bare',
+        contextWindow: 1_000_000,
+        reasoningEfforts: { off: 'none', low: 'low', high: 'high', max: 'max' },
+      }],
+    })
   })
 
   it('refuses to create until the route, endpoint, and a model are usable', () => {
@@ -1153,7 +1260,11 @@ describe('hand-declared providers', () => {
     expect(firstMutate(mutate).ops[0]?.value).toEqual({
       api: 'anthropic-messages',
       baseURL: 'https://acme.test/v1',
-      models: [{ id: 'm' }],
+      models: [{
+        id: 'm',
+        contextWindow: 1_000_000,
+        reasoningEfforts: { off: 'none', low: 'low', high: 'high', max: 'max' },
+      }],
     })
   })
 

@@ -187,9 +187,10 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     await dialog.getByLabel('Provider ID').fill('acme-gateway')
     await dialog.getByLabel('显示名称').fill('Acme Gateway')
     await dialog.getByLabel('API 地址').fill('https://gateway.acme.example/v1')
-    // No reasoning effort on a provider card at all: effort is a per-model
-    // capability, the models under one provider disagree about it, and a
-    // switch in the composer already records provider+model+effort together.
+    // No provider-scoped reasoning field: the thinking-level map is per model
+    // and lives behind that row's advanced disclosure. The row itself starts
+    // with the 1M context window and off/low/high/max map, so the created
+    // profile carries both without a settings.yaml edit.
     expect(await dialog.getByLabel('推理强度').count()).toBe(0)
     await dialog.getByRole('button', { name: '添加模型' }).click()
     await dialog.getByLabel('模型 ID 1').fill('acme-large')
@@ -199,6 +200,12 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     await row.waitFor({ timeout: 10_000 })
     const document = await readFile(join(scaffold.harnessHome, 'settings.yaml'), 'utf8')
     expect(document).toContain('acme-gateway:')
+    expect(document).toContain('contextWindow: 1000000')
+    expect(document).toContain('reasoningEfforts:')
+    expect(document).toContain('off: none')
+    expect(document).toContain('low: low')
+    expect(document).toContain('high: high')
+    expect(document).toContain('max: max')
 
     // The tag follows the adapter's installed catalog: this route is in no
     // catalog, while minimax-cn is — even though both now have profiles.

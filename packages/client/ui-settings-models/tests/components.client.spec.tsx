@@ -503,6 +503,22 @@ describe('ModelsSection', () => {
     expect(validateDeepSeekModels([{ id: 'model', maxTokens: 0 }]))
       .toEqual({ index: 0, key: 'modelMaxTokensInvalid' })
     expect(validateDeepSeekModels([{ id: 'model', maxTokens: 8192 }])).toBeUndefined()
+    const efforts = { off: 'none', low: 'low', high: 'high', max: 'max' }
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: efforts }])).toBeUndefined()
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: false }])).toBeUndefined()
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: { off: null, low: 'low' } }])).toBeUndefined()
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: null }]))
+      .toEqual({ index: 0, key: 'modelReasoningEffortsInvalid' })
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: [] }]))
+      .toEqual({ index: 0, key: 'modelReasoningEffortsInvalid' })
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: {} }]))
+      .toEqual({ index: 0, key: 'modelReasoningEffortsInvalid' })
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: { off: 'none' } }]))
+      .toEqual({ index: 0, key: 'modelReasoningEffortsInvalid' })
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: { off: '', low: 'low' } }]))
+      .toEqual({ index: 0, key: 'modelReasoningEffortsInvalid' })
+    expect(validateDeepSeekModels([{ id: 'model', reasoningEfforts: { off: 'none', low: null } }]))
+      .toEqual({ index: 0, key: 'modelReasoningEffortsInvalid' })
   })
 
   it('reads context windows written as counts, thousands, or millions', () => {

@@ -18,7 +18,7 @@ import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
 import { Button, IconPlusOutline16, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-web-react'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
-import { deriveKeyRef, messageOf, protocolChoices, providerUsable } from './store.ts'
+import { deriveKeyRef, messageOf, protocolChoices, providerUsable, reasoningEffortLevels } from './store.ts'
 import type { ModelsSettingsState, ModelsSettingsStore, ProviderRow } from './store.ts'
 import { ProviderEditor, type ProviderEditorProps } from './ProviderEditor.tsx'
 import type { en } from './locales.ts'
@@ -270,6 +270,7 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
   // one whose schema names the protocols one may speak; without it mounted
   // there is nothing to declare and the entry point stays disabled.
   const protocols = protocolChoices(state.namespaces.get('llm-pi-ai'))
+  const reasoningLevels = reasoningEffortLevels(state.namespaces.get('llm-pi-ai'))
 
   return (
     <div className={styles['section']}>
@@ -433,6 +434,7 @@ function Loaded({ injected }: { injected: ModelsSectionInjected }): ReactNode {
                 <CustomProviderCard
                   taken={state.rows.map(row => row.entry.provider)}
                   protocols={protocols}
+                  reasoningLevels={reasoningLevels}
                   /* v8 ignore next -- the card only opens from a button disabled without this namespace */
                   revision={state.namespaces.get('llm-pi-ai')?.revision ?? 0}
                   api={api}

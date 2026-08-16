@@ -506,6 +506,22 @@
   padding: 8px 4px 2px;
 }
 
+/* The thinking-level map spans the capacity grid: it is a table-like block of
+   level/wire rows, not a third capacity column. */
+.reasoningEditor {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reasoningRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
 .modelField {
   display: flex;
   flex-direction: column;

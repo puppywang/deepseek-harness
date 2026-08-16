@@ -14,11 +14,12 @@
  * and at least one model — are required here rather than at load, so the
  * failure names the field while the user is still looking at it.
  *
- * There is deliberately no reasoning-effort control, here or on the editor
- * card: effort is a per-MODEL capability, and the models under one provider
- * disagree about it, so a provider-scoped control can only be set to a value
- * some of them reject. The composer's model picker offers each model its own
- * levels instead.
+ * Reasoning effort is a per-MODEL capability, so the control lives on each
+ * model row's advanced disclosure rather than on the provider card. A new row
+ * starts with a 1,000,000-token context window and the common
+ * `off`/`low`/`high`/`max` thinking-level map, both editable before creation,
+ * so a hand-declared route no longer requires a `settings.yaml` edit to serve
+ * reasoning levels in the composer.
  */
 
 import { useState } from 'react'
@@ -46,12 +47,25 @@ const NS = 'llm-pi-ai'
  */
 const ROUTE_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
 
+/**
+ * What every model row of a hand-declared route starts with: the context
+ * window the user asked for up front, and the common thinking-level spellings
+ * OpenAI-compatible gateways accept. Both remain editable per row.
+ */
+const CUSTOM_MODEL_TEMPLATE: ModelDraft = {
+  id: '',
+  contextWindow: 1_000_000,
+  reasoningEfforts: { off: 'none', low: 'low', high: 'high', max: 'max' },
+}
+
 /** Props of {@link CustomProviderCard}. */
 export interface CustomProviderCardProps {
   /** Route ids already declared, so the card refuses to shadow one. */
   taken: readonly string[]
   /** Wire protocols the adapter can serve, in the order it reports them. */
   protocols: readonly string[]
+  /** Thinking-level keys the adapter accepts, in the order it reports them. */
+  reasoningLevels: readonly string[]
   /**
    * Revision of the `llm-pi-ai` user section this card opened at, sent with
    * the create so a route another tab declared meanwhile is a refusal rather
@@ -267,6 +281,8 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
       <ModelListEditor
         models={models}
         onChange={setModels}
+        reasoningLevels={props.reasoningLevels}
+        newModelTemplate={CUSTOM_MODEL_TEMPLATE}
         probe={{
           settingsNs: NS,
           baseURL,
