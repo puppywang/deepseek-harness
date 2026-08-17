@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-Browser **Plugins** tab that manages profile plugins from Web Settings. The client registers one `settings.plugins.tab` contribution with id `manage` (after the read-only `all` inventory tab). It lazily reads `ctx.remote.pluginManager.list()` and offers install (spec + enable row), update, and uninstall actions through the same Remote. The Host re-applies the patch stack to the running Loader, so changes apply live without restart; the tab only suggests a restart if a plugin fails to load.
+Browser **Plugins** tab that manages profile plugins from Web Settings. The client registers one `settings.plugins.tab` contribution with id `manage` (after the read-only `all` inventory tab). It lazily reads `ctx.remote.pluginManager.list()` and offers install (spec + enable row), update, and uninstall actions through the same Remote. The Host re-applies the patch stack to the running Loader, so changes apply live without restart; when the Host reports `restartRequired: true`, the tab opens a confirmation dialog warning that running conversations will be interrupted before calling `pluginManager.restart`.
 
 The registration uses `ctx.slots.inject()`, so it follows late tab declaration, redeclaration, locale changes, and teardown without importing the section owner.
 

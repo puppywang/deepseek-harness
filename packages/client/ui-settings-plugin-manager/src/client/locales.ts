@@ -7,6 +7,8 @@ export type PluginManagerLocaleKey =
   | 'dependency' | 'template' | 'installTitle' | 'installSpec' | 'installPlaceholder'
   | 'enableRow' | 'install' | 'installing' | 'update' | 'updating' | 'uninstall' | 'uninstalling'
   | 'removeConfirm' | 'empty' | 'noMatch' | 'loadFailed' | 'retry' | 'mutateFailed'
+  | 'restartConfirmTitle' | 'restartConfirmDescription' | 'restartAcknowledge'
+  | 'restartCancel' | 'restartConfirm' | 'restarting' | 'restartFailed'
 
 /** English copy. */
 export const en: Record<PluginManagerLocaleKey, string> = {
@@ -38,6 +40,13 @@ export const en: Record<PluginManagerLocaleKey, string> = {
   loadFailed: 'Loading installed plugins failed.',
   retry: 'Retry',
   mutateFailed: 'The plugin operation failed.',
+  restartConfirmTitle: 'Restart dsh to apply changes?',
+  restartConfirmDescription: 'A restart is required to finish this plugin change. Restarting will interrupt conversations that are currently running. Confirm that you want to continue.',
+  restartAcknowledge: 'I understand running conversations will be interrupted.',
+  restartCancel: 'Not now',
+  restartConfirm: 'Restart dsh',
+  restarting: 'Restarting dsh\u2026',
+  restartFailed: 'The restart request failed.',
 }
 
 /** Simplified Chinese copy. */
@@ -70,4 +79,11 @@ export const zh: Record<PluginManagerLocaleKey, string> = {
   loadFailed: '读取已安装插件失败。',
   retry: '重试',
   mutateFailed: '插件操作失败。',
+  restartConfirmTitle: '需要重启 dsh 才能完成变更？',
+  restartConfirmDescription: '完成这项插件变更需要重启 dsh。重启会中断当前正在运行的对话。请确认后继续。',
+  restartAcknowledge: '我已知晓正在进行的对话会被中断。',
+  restartCancel: '暂不重启',
+  restartConfirm: '重启 dsh',
+  restarting: '正在重启 dsh\u2026',
+  restartFailed: '重启请求失败。',
 }

@@ -116,6 +116,7 @@ const PRIVILEGED_METHODS = new Set([
   'pluginManager.install',
   'pluginManager.update',
   'pluginManager.uninstall',
+  'pluginManager.restart',
   'credentials.describe',
   'credentials.set',
   'credentials.unset',

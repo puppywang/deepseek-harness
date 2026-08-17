@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type {
   InstalledPluginView,
   PluginManagerMutation,
+  PluginManagerRestartResult,
   PluginManagerSnapshot,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import {
   IconSearchOutline16,
+  RiskConfirmation,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './PluginManagerSettingsTab.module.css'
@@ -22,6 +24,8 @@ export interface PluginManagerSettingsTabInjected {
   update: (request: { packageName: string }) => Promise<PluginManagerMutation>
   /** Remove one installed package. */
   uninstall: (request: { packageName: string }) => Promise<PluginManagerMutation>
+  /** Ask the Host to restart dsh; call only after the user confirms. */
+  restart: () => Promise<PluginManagerRestartResult>
 }
 
 /** Full component props assembled by the Settings slot renderer. */
@@ -43,7 +47,7 @@ function matches(plugin: InstalledPluginView, normalizedQuery: string): boolean 
 
 /** Render the installed-plugin manager. */
 export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): ReactNode {
-  const { list, install, update, uninstall, t } = props
+  const { list, install, update, uninstall, restart, t } = props
   const [request, setRequest] = useState(0)
   const [query, setQuery] = useState('')
   const [state, setState] = useState<ViewState>({ status: 'loading' })
@@ -51,6 +55,10 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
   const [enableRow, setEnableRow] = useState(true)
   const [busyPackage, setBusyPackage] = useState<string>()
   const [mutationError, setMutationError] = useState<string>()
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false)
+  const [restartAcknowledged, setRestartAcknowledged] = useState(false)
+  const [restarting, setRestarting] = useState(false)
+  const [restartError, setRestartError] = useState<string>()
 
   useEffect(() => {
     let current = true
@@ -78,12 +86,28 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
     setMutationError(undefined)
     setBusyPackage(packageName)
     try {
-      await action()
+      const result = await action()
+      if (result.restartRequired) {
+        setRestartAcknowledged(false)
+        setRestartError(undefined)
+        setShowRestartConfirm(true)
+      }
       refresh()
     } catch {
       setMutationError(t('mutateFailed'))
     } finally {
       setBusyPackage(undefined)
+    }
+  }
+
+  const confirmRestart = async (): Promise<void> => {
+    setRestarting(true)
+    setRestartError(undefined)
+    try {
+      await restart()
+    } catch {
+      setRestartError(t('restartFailed'))
+      setRestarting(false)
     }
   }
 
@@ -194,6 +218,20 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
           </ul>
         )
         : null}
+
+      <RiskConfirmation
+        open={showRestartConfirm}
+        title={t('restartConfirmTitle')}
+        description={restartError === undefined ? t('restartConfirmDescription') : restartError}
+        acknowledgeLabel={t('restartAcknowledge')}
+        cancelLabel={t('restartCancel')}
+        confirmLabel={restarting ? t('restarting') : t('restartConfirm')}
+        acknowledged={restartAcknowledged}
+        disabled={restarting}
+        onAcknowledgedChange={setRestartAcknowledged}
+        onCancel={() => { setShowRestartConfirm(false) }}
+        onConfirm={() => { void confirmRestart() }}
+      />
     </div>
   )
 }

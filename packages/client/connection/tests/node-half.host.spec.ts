@@ -173,7 +173,7 @@ describe('connection node half', () => {
       'settings.describe', 'settings.openDocument', 'settings.update', 'settings.replace', 'settings.mutate',
       'credentials.describe', 'credentials.set', 'credentials.unset',
       'llm.discoverModels',
-      'pluginManager.list', 'pluginManager.install', 'pluginManager.update', 'pluginManager.uninstall',
+      'pluginManager.list', 'pluginManager.install', 'pluginManager.update', 'pluginManager.uninstall', 'pluginManager.restart',
       // A composition names the plugins a session runs: reading one is
       // reconnaissance, and copy/remove/openDocument manage the roster and
       // drive the host desktop.
@@ -468,7 +468,7 @@ describe('connection node half over a real HTTP server', () => {
         'settings.describe', 'settings.openDocument', 'settings.update', 'settings.replace', 'settings.mutate',
         'credentials.describe', 'credentials.set', 'credentials.unset',
         'host.pickDirectory', 'host.openPath',
-        'pluginManager.list', 'pluginManager.install', 'pluginManager.update', 'pluginManager.uninstall',
+        'pluginManager.list', 'pluginManager.install', 'pluginManager.update', 'pluginManager.uninstall', 'pluginManager.restart',
         // Carries a draft credential and turns the host into a fetcher for a
         // URL the caller picked: an anonymous LAN caller must not reach it.
         'llm.discoverModels',

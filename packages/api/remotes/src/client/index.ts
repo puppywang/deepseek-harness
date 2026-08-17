@@ -16,6 +16,7 @@ export type {
   PluginManagerInstallRequest,
   PluginManagerMutation,
   PluginManagerPackageRequest,
+  PluginManagerRestartResult,
   PluginManagerSnapshot,
 } from '@deepseek-ai/dsh-host-plugin-manager/types'
 export type {} from '@deepseek-ai/dsh-commands/remote'

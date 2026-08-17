@@ -430,9 +430,19 @@ async function startHarnessAttempt(bridge: DesktopBridge): Promise<string> {
         return
       }
       if (!stopping) {
+        // A zero exit while the app is running is the harness exiting on its
+        // own request (the plugin manager's confirmed restart), not a crash:
+        // it resets the crash-restart budget so the user's restarts never
+        // exhaust the bounded auto-recovery attempts. Only a crash (nonzero)
+        // consumes an attempt.
+        if (code === 0) harnessRestartAttempts = 0
         scheduleHarnessRestart(
           bridge,
-          new Error(`dsh web 子进程意外退出（code=${code ?? 'null'}, signal=${signal ?? 'null'}）`),
+          new Error(
+            code === 0
+              ? 'dsh web 已按请求退出，正在重启'
+              : `dsh web 子进程意外退出（code=${code ?? 'null'}, signal=${signal ?? 'null'}）`,
+          ),
         )
       }
     })

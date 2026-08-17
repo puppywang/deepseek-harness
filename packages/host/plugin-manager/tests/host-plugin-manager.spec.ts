@@ -44,7 +44,7 @@ function profileFixture(): string {
 }
 
 describe('PluginManagerGateway', () => {
-  it('publishes list, install, update, and uninstall under the pluginManager namespace', async () => {
+  it('publishes list, install, update, uninstall, and restart under the pluginManager namespace', async () => {
     const profileDir = profileFixture()
     const previous = process.env.DSH_HOME
     process.env.DSH_HOME = join(profileDir, '..', '..')
@@ -58,6 +58,7 @@ describe('PluginManagerGateway', () => {
         { method: 'install', invocation: { kind: 'direct' } },
         { method: 'update', invocation: { kind: 'direct' } },
         { method: 'uninstall', invocation: { kind: 'direct' } },
+        { method: 'restart', invocation: { kind: 'direct' } },
       ])
       const snapshot = await manager.list()
       expect(snapshot.plugins).toContainEqual(expect.objectContaining({

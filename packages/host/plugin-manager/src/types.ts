@@ -38,3 +38,9 @@ export interface PluginManagerMutation {
   /** Whether the user must restart dsh. Live reload is attempted, so this is normally false. */
   restartRequired: boolean
 }
+
+/** pluginManager.restart response. */
+export interface PluginManagerRestartResult {
+  /** True when the restart request was accepted and the running dsh is shutting down. */
+  restarted: true
+}

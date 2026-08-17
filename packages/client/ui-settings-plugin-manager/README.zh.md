@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-浏览器端的 **插件** 标签页，在 Web Settings 中管理 profile 插件。客户端注册一个 `settings.plugins.tab` 贡献，id 为 `manage`（排在只读的 `all` 清单页之后）。它惰性读取 `ctx.remote.pluginManager.list()`，并通过同一 Remote 提供安装（spec + 启用行）、更新与卸载操作。Host 会把 patch 栈重新应用到正在运行的 Loader，因此变更无需重启即可生效；标签页只在插件加载失败时提示重启。
+浏览器端的 **插件** 标签页，在 Web Settings 中管理 profile 插件。客户端注册一个 `settings.plugins.tab` 贡献，id 为 `manage`（排在只读的 `all` 清单页之后）。它惰性读取 `ctx.remote.pluginManager.list()`，并通过同一 Remote 提供安装（spec + 启用行）、更新与卸载操作。Host 会把 patch 栈重新应用到正在运行的 Loader，因此变更无需重启即可生效；当 Host 报告 `restartRequired: true` 时，标签页会先弹出确认框，明确提示会中断正在运行的对话，再调用 `pluginManager.restart`。
 
 注册使用 `ctx.slots.inject()`，因此会遵循晚声明、重复声明、locale 变化与 teardown，而无需导入 section 属主。
 

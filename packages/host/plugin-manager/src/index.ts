@@ -19,6 +19,7 @@ import type {
   PluginManagerInstallRequest,
   PluginManagerMutation,
   PluginManagerPackageRequest,
+  PluginManagerRestartResult,
   PluginManagerSnapshot,
 } from './types.ts'
 
@@ -48,12 +49,19 @@ export class PluginManagerGateway extends TypertRemoteService {
     return { profileDir: resolveProfileDir('web'), installAnchor: installAnchor() }
   }
 
-  /** Reapply the web profile's full patch stack to the live root Include. */
-  private async applyLive(): Promise<void> {
-    const { installAnchor } = this.options()
-    await reloadRootInclude(this.ctx, {
-      profile: loadProfile('dsh', 'web', installAnchor, undefined, { userLayer: true }),
-    })
+  /** Reapply the web profile's full patch stack to the live root Include.
+   * @returns false when the live reload could not complete and a restart is required.
+   */
+  private async applyLive(): Promise<boolean> {
+    try {
+      const { installAnchor } = this.options()
+      await reloadRootInclude(this.ctx, {
+        profile: loadProfile('dsh', 'web', installAnchor, undefined, { userLayer: true }),
+      })
+      return true
+    } catch {
+      return false
+    }
   }
 
   /** Run pnpm through the subprocess seam using the bundled executable. */
@@ -102,8 +110,8 @@ export class PluginManagerGateway extends TypertRemoteService {
       cwd: process.cwd(),
       runPnpm: this.runPnpm,
     })
-    await this.applyLive()
-    return { ...result, version: result.version ?? null, restartRequired: false }
+    const live = await this.applyLive()
+    return { ...result, version: result.version ?? null, restartRequired: !live }
   }
 
   /**
@@ -118,8 +126,8 @@ export class PluginManagerGateway extends TypertRemoteService {
       packageName: request.packageName,
       runPnpm: this.runPnpm,
     })
-    await this.applyLive()
-    return { ...result, version: result.version ?? null, restartRequired: false }
+    const live = await this.applyLive()
+    return { ...result, version: result.version ?? null, restartRequired: !live }
   }
 
   /**
@@ -134,8 +142,23 @@ export class PluginManagerGateway extends TypertRemoteService {
       packageName: request.packageName,
       runPnpm: this.runPnpm,
     })
-    await this.applyLive()
-    return { ...result, version: result.version ?? null, restartRequired: false }
+    const live = await this.applyLive()
+    return { ...result, version: result.version ?? null, restartRequired: !live }
+  }
+
+  /**
+   * Restart the running dsh process after the user confirmed. The desktop shell
+   * restarts the harness child; in plain `dsh web` the process exits.
+   * @returns the restart acceptance.
+   */
+  @Remote('restart')
+  restart(): PluginManagerRestartResult {
+    const appExit = this.ctx.get('appExit') as ((code: number) => void) | undefined
+    if (appExit === undefined) {
+      throw new Error('pluginManager.restart: the launcher did not provide ctx.appExit')
+    }
+    appExit(0)
+    return { restarted: true }
   }
 }
 

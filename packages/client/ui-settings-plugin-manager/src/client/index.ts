@@ -61,7 +61,14 @@ export function apply(ctx: ClientContext): void {
     }
     return result.value
   }
-  const injected = (): PluginManagerSettingsTabInjected => ({ list, install, update, uninstall })
+  const restart: PluginManagerSettingsTabInjected['restart'] = async () => {
+    const result = await ctx.remote.pluginManager.restart()
+    if (!result.ok) {
+      throw new Error(`pluginManager.restart failed: ${result.error.code}: ${result.error.message}`)
+    }
+    return result.value
+  }
+  const injected = (): PluginManagerSettingsTabInjected => ({ list, install, update, uninstall, restart })
 
   ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
     name: 'settings.plugins.tab',
