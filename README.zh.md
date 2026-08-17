@@ -8,7 +8,7 @@ DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的�
 
 ## 独立桌面端
 
-DeepSeek Harness 提供独立的 Electron 桌面应用（`@deepseek-ai/dsh-desktop`）。Windows、macOS、Linux 安装包内置 Web UI、`dsh` 运行时与 Node.js 运行时，桌面安装无需 Node.js、pnpm 或源码目录。桌面壳额外提供原生目录与文件打开、Electron 下载保存对话框、单实例聚焦、运行时自动重启，以及 Windows/macOS 上的 GitHub Release 自动更新。每个 `dsh-v<version>` 标签都会构建安装包并附加到 [GitHub Releases](https://github.com/deepseek-ai/deepseek-harness/releases)。运行、打包与发布细节见[桌面端文档](apps/desktop/README.md)。
+DeepSeek Harness 提供独立的 Electron 桌面应用（`@deepseek-ai/dsh-desktop`）。Windows、macOS、Linux 安装包内置 Web UI、`dsh` 运行时与 Node.js 运行时，桌面安装无需 Node.js、pnpm 或源码目录。桌面壳额外提供原生目录与文件打开、Electron 下载保存对话框、单实例聚焦、运行时自动重启，以及 Windows/macOS 上的 GitHub Release 自动更新。Web UI 内置 VS Code 风格的工作区文件浏览器，文件可直接在应用内的可编辑标签页中打开。每个 `dsh-v<version>` 标签都会构建安装包并附加到 [GitHub Releases](https://github.com/deepseek-ai/deepseek-harness/releases)。运行、打包与发布细节见[桌面端文档](apps/desktop/README.md)。
 
 ## 增强模式（锚定）
 
@@ -46,7 +46,7 @@ pnpm dsh web
 
 - 欢迎通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告。
 - 为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现。
-- 社区插件可以扩展 Web UI，例如 [`dsh-plugin-file-explorer`](https://github.com/bearllfleed/Dsh-FileExplorer) 提供 VS Code 风格的工作区文件浏览器、可编辑标签页与 Markdown 预览。安装：`dsh plugin --profile web add dsh-plugin-file-explorer`，并在 profile 的 `cordis.patch.yml` 中启用对应行。
+- 社区插件可以扩展 Web UI。内置的工作区文件浏览器来自 [`dsh-plugin-file-explorer`](https://github.com/bearllfleed/Dsh-FileExplorer)；安装其他插件用 `dsh plugin --profile web add <package>`，并在 profile 的 `cordis.patch.yml` 中启用对应行。
 - 本项目已获 [LINUX DO](https://linux.do/) 社区认可。
 - 欢迎加入 DeepSeek Harness 企微群：扫码添加企微小助手并填写入群问卷，完成后小助手会邀请你入群。
 

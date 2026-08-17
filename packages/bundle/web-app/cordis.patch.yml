@@ -219,6 +219,12 @@
     - id: ui-workspace
       name: '@deepseek-ai/dsh-client-ui-workspace'
 
+    # Community plugin: VS Code-style workspace file explorer. The node half
+    # registers bounded, workspace-contained file routes under
+    # /plugin/file-explorer; the client half contributes the explorer UI.
+    - id: file-explorer
+      name: dsh-plugin-file-explorer
+
     # Input triggers: the '/' | '@' pipeline (ui-input-trigger), the command surface over
     # it (ui-commands), and the two reference sources (ui-skill / ui-subagent).
     - id: ui-input-trigger

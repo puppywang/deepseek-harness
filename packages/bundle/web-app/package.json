@@ -96,6 +96,7 @@
     "@deepseek-ai/dsh-message-feedback": "workspace:^",
     "@deepseek-ai/dsh-session-projection-cache": "workspace:^",
     "@deepseek-ai/dsh-session-log-export": "workspace:^",
+    "dsh-plugin-file-explorer": "^0.2.0",
     "@deepseek-ai/dsh-session-stats": "workspace:^",
     "@deepseek-ai/dsh-storage": "workspace:^",
     "@deepseek-ai/dsh-storage-domain": "workspace:^",

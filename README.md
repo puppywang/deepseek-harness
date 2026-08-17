@@ -8,7 +8,7 @@ It uses an architecture where **everything is a plugin**, and is powered by [Cor
 
 ## Desktop app
 
-DeepSeek Harness ships a standalone Electron desktop app (`@deepseek-ai/dsh-desktop`). Windows, macOS, and Linux installers bundle the Web UI, the `dsh` runtime, and a Node.js runtime, so a desktop install needs no Node.js, pnpm, or source checkout. The desktop shell adds native directory and file opening, Electron download dialogs, single-instance focus, automatic runtime restarts, and GitHub Release updates on Windows and macOS. Installers are built from every `dsh-v<version>` tag and attached to [GitHub Releases](https://github.com/deepseek-ai/deepseek-harness/releases). See the [desktop app documentation](apps/desktop/README.md) for run, packaging, and release details.
+DeepSeek Harness ships a standalone Electron desktop app (`@deepseek-ai/dsh-desktop`). Windows, macOS, and Linux installers bundle the Web UI, the `dsh` runtime, and a Node.js runtime, so a desktop install needs no Node.js, pnpm, or source checkout. The desktop shell adds native directory and file opening, Electron download dialogs, single-instance focus, automatic runtime restarts, and GitHub Release updates on Windows and macOS. A VS Code-style workspace file explorer is bundled with the Web UI, so files open in editable tabs inside the app. Installers are built from every `dsh-v<version>` tag and attached to [GitHub Releases](https://github.com/deepseek-ai/deepseek-harness/releases). See the [desktop app documentation](apps/desktop/README.md) for run, packaging, and release details.
 
 ## Enhanced mode (anchored)
 
@@ -46,7 +46,7 @@ pnpm dsh web
 
 - Feel free to submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).
 - Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
-- Community plugins extend the Web UI, for example [`dsh-plugin-file-explorer`](https://github.com/bearllfleed/Dsh-FileExplorer) adds a VS Code-style workspace file explorer with editable tabs and Markdown preview. Install with `dsh plugin --profile web add dsh-plugin-file-explorer` and enable its row in the profile's `cordis.patch.yml`.
+- Community plugins extend the Web UI. The bundled workspace file explorer comes from [`dsh-plugin-file-explorer`](https://github.com/bearllfleed/Dsh-FileExplorer); install other plugins with `dsh plugin --profile web add <package>` and enable their row in the profile's `cordis.patch.yml`.
 - Join <a href="https://discord.gg/Ycq5dCaS4">DeepSeek Harness Discord community</a>.
 - This project is recognized by the [LINUX DO](https://linux.do/) community.
 

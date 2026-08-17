@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-17-shipped-file-explorer-plugin.md
+2026-08-17-shipped-file-explorer-plugin.md: 08ee1dc12b7fdfc3d64181b977fe1c13d8bd5f0f
+2026-08-17-shipped-file-explorer-plugin.zh.md: 44e4abd1934566b17576c9b875d4fb5f61965454
