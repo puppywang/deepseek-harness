@@ -11,8 +11,8 @@ export type PluginManagerLocaleKey =
 /** English copy. */
 export const en: Record<PluginManagerLocaleKey, string> = {
   tab: 'Plugins',
-  intro: 'Install, update, or remove plugins in this deployment\u2019s web profile. Changes apply after a restart.',
-  restartHint: 'Restart dsh to apply plugin changes.',
+  intro: 'Install, update, or remove plugins in this deployment\u2019s web profile. Changes apply live without a restart.',
+  restartHint: 'Changes are applied to the running dsh immediately. Restart only if a plugin\u2019s native module fails to load.',
   searchPlaceholder: 'Search installed plugins',
   packageName: 'Package',
   version: 'Version',
@@ -43,8 +43,8 @@ export const en: Record<PluginManagerLocaleKey, string> = {
 /** Simplified Chinese copy. */
 export const zh: Record<PluginManagerLocaleKey, string> = {
   tab: '插件管理',
-  intro: '安装、更新或卸载本部署 web profile 中的插件。变更在重启后生效。',
-  restartHint: '重启 dsh 后插件变更才会生效。',
+  intro: '安装、更新或卸载本部署 web profile 中的插件。变更无需重启即可实时生效。',
+  restartHint: '变更会立即应用给正在运行的 dsh。仅当某个插件的原生模块加载失败时才需要重启。',
   searchPlaceholder: '搜索已安装插件',
   packageName: '包名',
   version: '版本',

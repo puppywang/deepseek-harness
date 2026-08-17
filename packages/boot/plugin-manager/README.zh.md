@@ -16,5 +16,5 @@
 
 ## 已知限制与延期工作
 
-- **重启在库外**——变更会报告 `restartRequired: true`，但本库从不重启或重载运行中的 Loader。
+- **热重载由调用方负责**——本库只写 profile 文件，并保守地报告 `restartRequired: true`。Host pluginManager 服务现在会把组合 patch 栈重新应用到运行中的 Loader，并在成功时报告 `restartRequired: false`。
 - **一次一个 profile**——操作只寻址单个 `profileDir`；并发调用方必须自行串行化写入。

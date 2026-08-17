@@ -3,7 +3,7 @@
 import { dirname, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subprocess'
-import { resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
+import { resolveProfileDir, loadProfile, reloadRootInclude } from '@deepseek-ai/dsh-app-boot'
 import {
   installProfilePlugin,
   listProfilePlugins,
@@ -46,6 +46,14 @@ export class PluginManagerGateway extends TypertRemoteService {
 
   private options(): { profileDir: string; installAnchor: string } {
     return { profileDir: resolveProfileDir('web'), installAnchor: installAnchor() }
+  }
+
+  /** Reapply the web profile's full patch stack to the live root Include. */
+  private async applyLive(): Promise<void> {
+    const { installAnchor } = this.options()
+    await reloadRootInclude(this.ctx, {
+      profile: loadProfile('dsh', 'web', installAnchor, undefined, { userLayer: true }),
+    })
   }
 
   /** Run pnpm through the subprocess seam using the bundled executable. */
@@ -94,7 +102,8 @@ export class PluginManagerGateway extends TypertRemoteService {
       cwd: process.cwd(),
       runPnpm: this.runPnpm,
     })
-    return { ...result, version: result.version ?? null }
+    await this.applyLive()
+    return { ...result, version: result.version ?? null, restartRequired: false }
   }
 
   /**
@@ -109,7 +118,8 @@ export class PluginManagerGateway extends TypertRemoteService {
       packageName: request.packageName,
       runPnpm: this.runPnpm,
     })
-    return { ...result, version: result.version ?? null }
+    await this.applyLive()
+    return { ...result, version: result.version ?? null, restartRequired: false }
   }
 
   /**
@@ -124,7 +134,8 @@ export class PluginManagerGateway extends TypertRemoteService {
       packageName: request.packageName,
       runPnpm: this.runPnpm,
     })
-    return { ...result, version: result.version ?? null }
+    await this.applyLive()
+    return { ...result, version: result.version ?? null, restartRequired: false }
   }
 }
 

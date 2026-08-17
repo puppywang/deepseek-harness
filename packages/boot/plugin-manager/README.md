@@ -16,5 +16,5 @@ None; this package neither assembles nor sends model input.
 
 ## Known Limitations and Deferred Work
 
-- **Restart is external** — mutations report `restartRequired: true`, but this library never restarts or reloads the running Loader.
+- **Live reload is the caller's job** — the library writes only profile files and reports `restartRequired: true` as a conservative contract. The Host pluginManager service now re-applies the composed patch stack to the running Loader and reports `restartRequired: false` on success.
 - **One profile at a time** — operations address a single `profileDir`; concurrent callers must serialize their own writes.

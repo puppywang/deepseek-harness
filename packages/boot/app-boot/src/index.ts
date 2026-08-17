@@ -17,6 +17,7 @@ import Include, { applyEntryPatches, entryListSchema, type PatchOptions } from '
 import Group from '@deepseek-ai/cordis-plugin-group'
 import { dshHomePath, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { createLaunchEnvironmentSnapshot, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
+import { PROFILE_PATCH_FILENAME, type Profile } from './profile.ts'
 import type {} from '@deepseek-ai/cordis-plugin-hmr'
 // Side-effect type import: resolves `ctx.get('systemPrompt')` to the service.
 import type {} from '@deepseek-ai/dsh-system-prompt'
@@ -262,6 +263,58 @@ export async function watchUserPatches(
     if ((error as { code?: string } | null)?.code === 'INACTIVE_EFFECT') return async () => {}
     throw error
   }
+}
+
+/** Stable JSON-ish key for comparing patch rows across recompositions. */
+function stablePatchKey(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stablePatchKey).join(',')}]`
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.keys(value as Record<string, unknown>).sort()
+      .map(key => `${JSON.stringify(key)}:${stablePatchKey((value as Record<string, unknown>)[key])}`)
+    return `{${entries.join(',')}}`
+  }
+  return JSON.stringify(value)
+}
+
+/** Options for {@link reloadRootInclude}. */
+export interface ReloadRootIncludeOptions {
+  /** The loaded profile; its live bundle layers and user patch path are re-read from disk. */
+  profile: Profile
+  /** Explicit overlay patches to preserve. Omitted to diff against the current root Include. */
+  overlays?: readonly PatchOptions[]
+}
+
+/**
+ * Reapply the full composed profile patch stack to the live root Include.
+ * This is the bundle-aware counterpart of {@link watchUserPatches}: a profile
+ * plugin mutation that changes `dsh.profile.bundles` must update the include's
+ * effective patches immediately, not only on the next boot.
+ * @param ctx - settled app context containing the root Include.
+ * @param options - the loaded profile, plus optional overlay patches.
+ * @throws when the root Include is absent or its update fails.
+ */
+export async function reloadRootInclude(
+  ctx: Context,
+  options: ReloadRootIncludeOptions,
+): Promise<void> {
+  const entry = bootstrapIncludes.get(ctx)
+  if (entry === undefined) throw new Error('dsh: reloadRootInclude requires the root Include entry')
+  const currentConfig = entry.options.config as Include.Config
+  const { patches: _previousPatches, ...includeConfig } = currentConfig
+  const bundlePatches = options.profile.layers.flatMap(layer => layer.patches)
+  const userPatches = loadOptionalPatches('dsh', options.profile.patchPath) ?? []
+  const homePatches = loadOptionalPatches('dsh', resolve(resolveDshHome(), PROFILE_PATCH_FILENAME)) ?? []
+  const basePatches = [...bundlePatches, ...userPatches, ...homePatches]
+  let overlays: PatchOptions[]
+  if (options.overlays !== undefined) {
+    overlays = [...options.overlays]
+  } else {
+    const known = new Set(basePatches.map(stablePatchKey))
+    overlays = (currentConfig.patches ?? []).filter(patch => !known.has(stablePatchKey(patch)))
+  }
+  const patches = [...basePatches, ...overlays]
+  await entry.update({ config: { ...includeConfig, patches } })
+  await ctx.get('loader')?.await()
 }
 
 /**

@@ -25,6 +25,6 @@ Add a browser Settings tab (`@deepseek-ai/dsh-client-ui-settings-plugin-manager`
 ## Consequences
 
 - `dsh plugin` CLI behavior is preserved (same messages/exit codes) while now falling back to the bundled pnpm executable when `pnpm` is absent.
-- The web profile gains a loopback-privileged plugin management API; mutations are still restart-required because the Loader does not hot-reload rows.
+- The web profile gains a loopback-privileged plugin management API; mutations are re-applied to the running Loader through the root Include's patch stack, so a restart is only a fallback for plugins whose native modules cannot hot-load.
 - The new client tab is a first UI: it accepts package/git specs but has no GitHub catalog discovery yet.
 - `@pnpm/exe` is added to the approved build-scripts allowlist; its preinstall assembles the platform executable at install time.

@@ -35,5 +35,6 @@ export interface PluginManagerMutation {
   bundle: boolean
   client: boolean
   enabled: boolean
-  restartRequired: true
+  /** Whether the user must restart dsh. Live reload is attempted, so this is normally false. */
+  restartRequired: boolean
 }

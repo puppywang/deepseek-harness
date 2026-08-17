@@ -25,6 +25,6 @@ Status: implemented
 ## 后果
 
 - `dsh plugin` CLI 行为保持不变（同样的提示与退出码），并在 `pnpm` 缺失时回退到内置 pnpm 可执行文件。
-- web profile 新增 loopback 特权插件管理 API；变更仍需重启，因为 Loader 不会热重载行。
+- web profile 新增 loopback 特权插件管理 API；变更会通过根 Include 的 patch 栈重新应用到运行中的 Loader，因此重启只是无法热加载原生模块的插件所用的回退方案。
 - 新客户端标签页是第一版 UI：支持包名/git spec 安装，但还没有 GitHub 目录发现。
 - `@pnpm/exe` 加入批准的 build-scripts allowlist；其 preinstall 在安装时组装平台可执行文件。

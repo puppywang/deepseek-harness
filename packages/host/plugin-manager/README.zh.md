@@ -4,7 +4,7 @@
 
 用于 profile 插件管理的 Host Remote 服务。`PluginManagerGateway` 注册 `pluginManager` 服务，并发布 Typert 生成的 `list`、`install`、`update`、`uninstall` Remote。它组合共享的 `@deepseek-ai/dsh-plugin-manager` 库与 subprocess seam，通过内置 `@pnpm/exe` 二进制执行 pnpm，无需系统安装 pnpm——这正是打包桌面应用内能够安装插件的路径。
 
-每个变更都按与 CLI 相同的语义写 `$DSH_HOME/profiles/web` manifest 与 `cordis.patch.yml`：声明 `dsh.bundle` 的依赖会加入 profile 层列表；安装时 `enable: true` 会为非 bundle 包添加一条幂等 Loader 行。变更会报告 `restartRequired: true`；本服务从不重启或重载 Loader。
+每个变更都按与 CLI 相同的语义写 `$DSH_HOME/profiles/web` manifest 与 `cordis.patch.yml`：声明 `dsh.bundle` 的依赖会加入 profile 层列表；安装时 `enable: true` 会为非 bundle 包添加一条幂等 Loader 行。每次变更后，服务会把完整的组合 profile patch 栈重新应用到正在运行的根 Include，因此安装／更新／卸载的插件无需重启 dsh 即可生效。变更结果因此报告 `restartRequired: false`；若某个插件的原生模块无法热加载，Host 会暴露该加载失败，重启仍是用户的恢复路径。
 
 ## 模型体验
 
@@ -17,4 +17,4 @@
 ## 已知限制与延期工作
 
 - **单一 profile**——本服务管理 `web` profile（`resolveProfileDir('web')`）；暂不暴露多 profile 管理。
-- **重启在服务外**——变更需要进程重启后 Loader 行才会出现；目前没有热重载或 relaunch RPC。
+- **原生模块可能无法热加载**——服务会立即重新应用 patch 栈；若某个插件热加载失败，会报告其 Loader 错误，并以进程重启作为回退。
