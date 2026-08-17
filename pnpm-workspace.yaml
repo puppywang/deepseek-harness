@@ -58,6 +58,9 @@ allowBuilds:
   # NSIS packaging uses this reviewed electron-builder helper to assemble the
   # Windows installer.
   electron-winstaller: true
+  # Plugin management ships the reviewed pnpm binary; its preinstall assembles
+  # the platform executable that makes desktop installs pnpm-free.
+  '@pnpm/exe': true
 
 minimumReleaseAgeExclude:
   # Fresh pi-ai releases carry the model catalog updates that are the whole

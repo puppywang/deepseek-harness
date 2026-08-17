@@ -238,6 +238,9 @@ importers:
       '@deepseek-ai/dsh-plan-mode':
         specifier: workspace:^
         version: link:../../packages/plan/plan-mode
+      '@deepseek-ai/dsh-plugin-manager':
+        specifier: workspace:^
+        version: link:../../packages/boot/plugin-manager
       '@deepseek-ai/dsh-pwsh-local':
         specifier: workspace:^
         version: link:../../packages/shell/pwsh-local
@@ -947,6 +950,9 @@ importers:
       '@deepseek-ai/dsh-host-plugin-inventory':
         specifier: workspace:^
         version: link:../../host/plugin-inventory
+      '@deepseek-ai/dsh-host-plugin-manager':
+        specifier: workspace:^
+        version: link:../../host/plugin-manager
       '@deepseek-ai/dsh-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
@@ -1060,6 +1066,25 @@ importers:
       commander:
         specifier: ^15.0.0
         version: 15.0.0
+
+  packages/boot/plugin-manager:
+    dependencies:
+      '@pnpm/exe':
+        specifier: ^11.22.0
+        version: 11.22.0
+      yaml:
+        specifier: ^2.9.0
+        version: 2.9.0
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-app-boot':
+        specifier: workspace:^
+        version: link:../app-boot
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
 
   packages/bundle/base:
     dependencies:
@@ -1422,6 +1447,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-settings-plugin-inventory':
         specifier: workspace:^
         version: link:../../client/ui-settings-plugin-inventory
+      '@deepseek-ai/dsh-client-ui-settings-plugin-manager':
+        specifier: workspace:^
+        version: link:../../client/ui-settings-plugin-manager
       '@deepseek-ai/dsh-client-ui-settings-plugins':
         specifier: workspace:^
         version: link:../../client/ui-settings-plugins
@@ -1482,6 +1510,9 @@ importers:
       '@deepseek-ai/dsh-host-plugin-inventory':
         specifier: workspace:^
         version: link:../../host/plugin-inventory
+      '@deepseek-ai/dsh-host-plugin-manager':
+        specifier: workspace:^
+        version: link:../../host/plugin-manager
       '@deepseek-ai/dsh-host-webserver':
         specifier: workspace:^
         version: link:../../host/webserver
@@ -2625,6 +2656,48 @@ importers:
         version: 18.3.1
 
   packages/client/ui-settings-plugin-inventory:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: workspace:^
+        version: link:../../api/remotes
+      '@deepseek-ai/dsh-client-locale':
+        specifier: workspace:^
+        version: link:../locale
+      '@deepseek-ai/dsh-client-runtime':
+        specifier: workspace:^
+        version: link:../runtime
+      '@deepseek-ai/dsh-client-test-runtime':
+        specifier: workspace:^
+        version: link:../../test-support/client-runtime
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: workspace:^
+        version: link:../ui-primitives
+      '@deepseek-ai/dsh-client-ui-settings':
+        specifier: workspace:^
+        version: link:../ui-settings
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: workspace:^
+        version: link:../ui-slots
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/react':
+        specifier: ~18.3.1
+        version: 18.3.31
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.2.0
+        version: 18.3.1(react@18.3.1)
+
+  packages/client/ui-settings-plugin-manager:
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:^
@@ -5011,6 +5084,31 @@ importers:
       '@deepseek-ai/dsh-invariants':
         specifier: workspace:^
         version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: workspace:^
+        version: link:../../typert/protocol
+
+  packages/host/plugin-manager:
+    dependencies:
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-app-boot':
+        specifier: workspace:^
+        version: link:../../boot/app-boot
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-plugin-manager':
+        specifier: workspace:^
+        version: link:../../boot/plugin-manager
+      '@deepseek-ai/dsh-subprocess':
+        specifier: workspace:^
+        version: link:../../subprocess/subprocess
       '@deepseek-ai/dsh-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol
@@ -10793,6 +10891,47 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
+  '@pnpm/exe@11.22.0':
+    resolution: {integrity: sha512-B1SGeKm+v9pX9YkzMmrnO2FbgBd8TDwzZ3jSj6J6ThxdyGvI4TsOfMeHARW4Wb25visPpmMDfIXrU76EZdJM4g==}
+    hasBin: true
+
+  '@pnpm/linux-arm64@11.22.0':
+    resolution: {integrity: sha512-xzzn3jYG9QaiFZPaHcWM3yX4Fm9UGz5E42mzpbvUEvXYf5O9fwNolenOhGLpRl2qS5u35fjZSvDZbWlOwHMcug==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@pnpm/linux-x64@11.22.0':
+    resolution: {integrity: sha512-isvaPctGinbsM2hsTtRsMarN8Sr5QhXDTNmn8Xv9Lp1PjincCvH2RBbhpo+xYIOxzgls1dtQSdgoORUbfRVALQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@pnpm/linuxstatic-arm64@11.22.0':
+    resolution: {integrity: sha512-i4J+AQWW0T3JBdXaLsvxu8ZmMG1HLS6JZQESdOR9uBv8Zumb4yg8GYT83eWRLacr6ngVdhEBiC3W4eOG64MFbA==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@pnpm/linuxstatic-x64@11.22.0':
+    resolution: {integrity: sha512-QYzk8jhSuSbVthW/OxEOhU3f3zhjpw4HqgedrlwbVNb7btCWn5del2Hb5PsYYka2PbmKq5EtF5IzYN8Yp1CfxQ==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@pnpm/macos-arm64@11.22.0':
+    resolution: {integrity: sha512-Io8Axk5kutPgMuAfOg1QGj3J0/KpLvH5iiPcmp7up8D4q7BNWT02ndQo3RyGWqrlkf5nwspM41GFpWTShrZ4Aw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@pnpm/win-arm64@11.22.0':
+    resolution: {integrity: sha512-QgaRuKGQKov7xW2utPCgDT83fn/PU5cD6HFgib48oTslz7wv26E89d4jMCxL4GRmEL2YCfkYuj5ITj1oVWg5WQ==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@pnpm/win-x64@11.22.0':
+    resolution: {integrity: sha512-iWYsiSwpgxqur+TwsnSoPdOQaEfd4ygB84mb5tJUOgim6PHr1xhKJBndaQzH+At/WkLxLdYN+K8dYc4M7naezg==}
+    cpu: [x64]
+    os: [win32]
+
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
 
@@ -10826,6 +10965,62 @@ packages:
 
   '@quansync/fs@1.0.0':
     resolution: {integrity: sha512-4TJ3DFtlf1L5LDMaM6CanJ/0lckGNtJcMjQ1NAV6zDmA0tEHKZtxNKin8EgPaVX1YzljbxckyT2tJrpQKAtngQ==}
+
+  '@reflink/reflink-darwin-arm64@0.1.19':
+    resolution: {integrity: sha512-ruy44Lpepdk1FqDz38vExBY/PVUsjxZA+chd9wozjUH9JjuDT/HEaQYA6wYN9mf041l0yLVar6BCZuWABJvHSA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@reflink/reflink-darwin-x64@0.1.19':
+    resolution: {integrity: sha512-By85MSWrMZa+c26TcnAy8SDk0sTUkYlNnwknSchkhHpGXOtjNDUOxJE9oByBnGbeuIE1PiQsxDG3Ud+IVV9yuA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@reflink/reflink-linux-arm64-gnu@0.1.19':
+    resolution: {integrity: sha512-7P+er8+rP9iNeN+bfmccM4hTAaLP6PQJPKWSA4iSk2bNvo6KU6RyPgYeHxXmzNKzPVRcypZQTpFgstHam6maVg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@reflink/reflink-linux-arm64-musl@0.1.19':
+    resolution: {integrity: sha512-37iO/Dp6m5DDaC2sf3zPtx/hl9FV3Xze4xoYidrxxS9bgP3S8ALroxRK6xBG/1TtfXKTvolvp+IjrUU6ujIGmA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@reflink/reflink-linux-x64-gnu@0.1.19':
+    resolution: {integrity: sha512-jbI8jvuYCaA3MVUdu8vLoLAFqC+iNMpiSuLbxlAgg7x3K5bsS8nOpTRnkLF7vISJ+rVR8W+7ThXlXlUQ93ulkw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@reflink/reflink-linux-x64-musl@0.1.19':
+    resolution: {integrity: sha512-e9FBWDe+lv7QKAwtKOt6A2W/fyy/aEEfr0g6j/hWzvQcrzHCsz07BNQYlNOjTfeytrtLU7k449H1PI95jA4OjQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@reflink/reflink-win32-arm64-msvc@0.1.19':
+    resolution: {integrity: sha512-09PxnVIQcd+UOn4WAW73WU6PXL7DwGS6wPlkMhMg2zlHHG65F3vHepOw06HFCq+N42qkaNAc8AKIabWvtk6cIQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@reflink/reflink-win32-x64-msvc@0.1.19':
+    resolution: {integrity: sha512-E//yT4ni2SyhwP8JRjVGWr3cbnhWDiPLgnQ66qqaanjjnMiu3O/2tjCPQXlcGc/DEYofpDc9fvhv6tALQsMV9w==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@reflink/reflink@0.1.19':
+    resolution: {integrity: sha512-DmCG8GzysnCZ15bres3N5AHCmwBwYgp0As6xjhQ47rAUTUXxJiK+lLUxaGsX3hd/30qUpVElh05PbGuxRPgJwA==}
+    engines: {node: '>= 10'}
 
   '@rolldown/binding-android-arm64@1.0.3':
     resolution: {integrity: sha512-454rs7jHngixp/NMxd5srYD57OnzSlZ/eFTETjORQHLwJG1lRtmNOJcBerZlfu4GjKqeq8aCCIQrMdHyhI51Hw==}
@@ -16797,6 +16992,40 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
+  '@pnpm/exe@11.22.0':
+    dependencies:
+      '@reflink/reflink': 0.1.19
+      detect-libc: 2.1.2
+    optionalDependencies:
+      '@pnpm/linux-arm64': 11.22.0
+      '@pnpm/linux-x64': 11.22.0
+      '@pnpm/linuxstatic-arm64': 11.22.0
+      '@pnpm/linuxstatic-x64': 11.22.0
+      '@pnpm/macos-arm64': 11.22.0
+      '@pnpm/win-arm64': 11.22.0
+      '@pnpm/win-x64': 11.22.0
+
+  '@pnpm/linux-arm64@11.22.0':
+    optional: true
+
+  '@pnpm/linux-x64@11.22.0':
+    optional: true
+
+  '@pnpm/linuxstatic-arm64@11.22.0':
+    optional: true
+
+  '@pnpm/linuxstatic-x64@11.22.0':
+    optional: true
+
+  '@pnpm/macos-arm64@11.22.0':
+    optional: true
+
+  '@pnpm/win-arm64@11.22.0':
+    optional: true
+
+  '@pnpm/win-x64@11.22.0':
+    optional: true
+
   '@protobufjs/aspromise@1.1.2': {}
 
   '@protobufjs/base64@1.1.2': {}
@@ -16822,6 +17051,41 @@ snapshots:
   '@quansync/fs@1.0.0':
     dependencies:
       quansync: 1.0.0
+
+  '@reflink/reflink-darwin-arm64@0.1.19':
+    optional: true
+
+  '@reflink/reflink-darwin-x64@0.1.19':
+    optional: true
+
+  '@reflink/reflink-linux-arm64-gnu@0.1.19':
+    optional: true
+
+  '@reflink/reflink-linux-arm64-musl@0.1.19':
+    optional: true
+
+  '@reflink/reflink-linux-x64-gnu@0.1.19':
+    optional: true
+
+  '@reflink/reflink-linux-x64-musl@0.1.19':
+    optional: true
+
+  '@reflink/reflink-win32-arm64-msvc@0.1.19':
+    optional: true
+
+  '@reflink/reflink-win32-x64-msvc@0.1.19':
+    optional: true
+
+  '@reflink/reflink@0.1.19':
+    optionalDependencies:
+      '@reflink/reflink-darwin-arm64': 0.1.19
+      '@reflink/reflink-darwin-x64': 0.1.19
+      '@reflink/reflink-linux-arm64-gnu': 0.1.19
+      '@reflink/reflink-linux-arm64-musl': 0.1.19
+      '@reflink/reflink-linux-x64-gnu': 0.1.19
+      '@reflink/reflink-linux-x64-musl': 0.1.19
+      '@reflink/reflink-win32-arm64-msvc': 0.1.19
+      '@reflink/reflink-win32-x64-msvc': 0.1.19
 
   '@rolldown/binding-android-arm64@1.0.3':
     optional: true

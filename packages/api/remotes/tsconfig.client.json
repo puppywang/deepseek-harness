@@ -37,6 +37,9 @@
       "path": "../../host/plugin-inventory"
     },
     {
+      "path": "../../host/plugin-manager"
+    },
+    {
       "path": "../../interaction/commands"
     },
     {

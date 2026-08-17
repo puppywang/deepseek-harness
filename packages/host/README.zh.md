@@ -14,6 +14,7 @@ dsh Web GUI 的宿主侧：所有客户端形态共享的 API 网关，以及承
 | [`directory-picker-browse/`](directory-picker-browse/README.md) | 应用内目录浏览器后端和交互 | 注册 `ctx.directoryPicker` |
 | [`directory-picker-auto/`](directory-picker-auto/README.md) | 宿主自适应选择器组合 | 挂载一个后端 |
 | [`plugin-inventory/`](plugin-inventory/README.md) | 当前 Loader 条目的只读投影 | Remote `pluginInventory/list` |
+| [`plugin-manager/`](plugin-manager/README.md) | profile 插件安装／更新／卸载／列出 | Remote `pluginManager/*` |
 
 `apiproxy` 保持传输无关；[`client/connection`](../client/connection/README.md) 提供浏览器／HTTP 载体。选择器实现可在共享 seam 后互相替换。
 

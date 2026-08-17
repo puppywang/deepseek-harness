@@ -1,0 +1,108 @@
+.tab {
+  display: grid;
+  gap: 12px;
+}
+
+.intro {
+  color: var(--dsh-text-secondary, #8a8f98);
+  font-size: 13px;
+  margin: 0;
+}
+
+.restart {
+  color: var(--dsh-text-warning, #c59a3a);
+  font-size: 12px;
+  margin: 0;
+}
+
+.installForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.installTitle {
+  flex-basis: 100%;
+  font-size: 14px;
+  margin: 8px 0 0;
+}
+
+.input {
+  min-width: 260px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--dsh-border, #30343c);
+  background: var(--dsh-input-bg, #1b1e24);
+  color: var(--dsh-text, #e6e6e6);
+  font-size: 13px;
+}
+
+.enableRow {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.installButton {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: var(--dsh-accent, #4f7cff);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.searchRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.error {
+  color: var(--dsh-text-danger, #e5484d);
+  font-size: 13px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--dsh-surface-l2, #202329);
+}
+
+.rowHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.packageName {
+  font-family: var(--dsh-mono, ui-monospace, monospace);
+  font-size: 13px;
+}
+
+.meta {
+  color: var(--dsh-text-secondary, #8a8f98);
+  font-size: 12px;
+}
+
+.rowActions {
+  display: flex;
+  gap: 8px;
+}

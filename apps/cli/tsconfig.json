@@ -24,6 +24,9 @@
       "path": "../../packages/boot/cmdline"
     },
     {
+      "path": "../../packages/boot/plugin-manager"
+    },
+    {
       "path": "../../packages/bundle/base"
     },
     {
