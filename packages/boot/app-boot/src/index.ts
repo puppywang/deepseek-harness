@@ -18,6 +18,7 @@ import Group from '@deepseek-ai/cordis-plugin-group'
 import { dshHomePath, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { createLaunchEnvironmentSnapshot, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { PROFILE_PATCH_FILENAME, type Profile } from './profile.ts'
+import { dedupePatchInserts } from './patch-dedup.ts'
 import type {} from '@deepseek-ai/cordis-plugin-hmr'
 // Side-effect type import: resolves `ctx.get('systemPrompt')` to the service.
 import type {} from '@deepseek-ai/dsh-system-prompt'
@@ -49,6 +50,7 @@ export {
   type ProfileLayer,
   type ProfileManifest,
 } from './profile.ts'
+export { dedupePatchInserts } from './patch-dedup.ts'
 
 /**
  * Resolve the config to boot. Replay swaps a `cordis.yml` basename for
@@ -312,7 +314,7 @@ export async function reloadRootInclude(
     const known = new Set(basePatches.map(stablePatchKey))
     overlays = (currentConfig.patches ?? []).filter(patch => !known.has(stablePatchKey(patch)))
   }
-  const patches = [...basePatches, ...overlays]
+  const patches = dedupePatchInserts([...basePatches, ...overlays])
   await entry.update({ config: { ...includeConfig, patches } })
   await ctx.get('loader')?.await()
 }
@@ -564,9 +566,10 @@ export async function mountRootInclude(
   // Pinned id: the bootstrap include is app glue, not a config row, and its
   // id appears in Loader failure chains — a random id would make startup
   // diagnostics unstable across runs (and snapshot fixtures).
+  const dedupedPatches = dedupePatchInserts(patches)
   const includeConfig: Include.Config = {
     path: pathToFileURL(absoluteConfigPath).href,
-    ...patches.length > 0 ? { patches: [...patches] } : {},
+    ...dedupedPatches.length > 0 ? { patches: [...dedupedPatches] } : {},
   }
   const rootInclude: EntryOptions = {
     id: 'include',
