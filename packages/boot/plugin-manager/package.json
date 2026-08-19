@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-plugin-manager",
   "description": "Host-plane profile plugin management: pnpm install/update/uninstall/reconcile/enable plus a bundled @pnpm/exe fallback",
-  "version": "0.1.0-rc.11",
+  "version": "0.1.0-rc.12",
   "private": true,
   "repository": {
     "type": "git",
