@@ -40,6 +40,12 @@
     # once the web UI owns the choice per session.
     mode: !!js process.env.DSH_TOOLS_MODE
 
+# AnySearch web search provider and advanced tools, shipped with the web app.
+# This is an id-targeted override of the existing `web` row, not a new insert.
+- id: web
+  config:
+    searchProvider: anysearch
+
 # ── web-only host rows, the transport layer, and the browser roster ─────────
 
 # `dsh.client` rows are the browser roster the modules node half scans into
@@ -106,16 +112,11 @@
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
 
-    # AnySearch web search provider and advanced tools, shipped with the web app.
-    - id: web
+    # AnySearch advanced tools row; the `web` provider override lives above.
+    - id: web-search-anysearch
+      name: '@anysearch/anysearch-dsh'
       config:
-        searchProvider: anysearch
-
-    - insert:
-        - id: web-search-anysearch
-          name: '@anysearch/anysearch-dsh'
-          config:
-            apiKeyEnv: ANYSEARCH_API_KEY
+        apiKeyEnv: ANYSEARCH_API_KEY
 
     # Ordinary provider for the parsed Web flags. Its plugin-level injection
     # waits for cmdlineArgs; no launcher metadata or special row kind is needed.
