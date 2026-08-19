@@ -16,6 +16,8 @@ import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from 'zod'
 import type {
   InstalledPluginView,
+  PluginManagerCatalog,
+  PluginManagerCatalogEntry,
   PluginManagerInstallRequest,
   PluginManagerMutation,
   PluginManagerPackageRequest,
@@ -47,6 +49,18 @@ export class PluginManagerGateway extends TypertRemoteService {
 
   private options(): { profileDir: string; installAnchor: string } {
     return { profileDir: resolveProfileDir('web'), installAnchor: installAnchor() }
+  }
+
+  /** Fetch one JSON URL with a short timeout and a browser-style User-Agent. */
+  private async fetchJson(url: string): Promise<unknown> {
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'deepseek-harness', Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!response.ok) {
+      throw new Error(`pluginManager.catalog: ${response.status} ${response.statusText} for ${url}`)
+    }
+    return await response.json()
   }
 
   /** Reapply the web profile's full patch stack to the live root Include.
@@ -94,6 +108,56 @@ export class PluginManagerGateway extends TypertRemoteService {
     const plugins = await listProfilePlugins(this.options())
     const views: InstalledPluginView[] = plugins.map(plugin => ({ ...plugin, version: plugin.version ?? null }))
     return { plugins: views }
+  }
+
+  /**
+   * List GitHub repositories tagged `dsh-plugin` and resolve each one's npm
+   * package name from its `package.json`. Entries are sorted by star count.
+   * @returns the discoverable plugin catalog.
+   */
+  @Remote('catalog')
+  async catalog(): Promise<PluginManagerCatalog> {
+    const search = await this.fetchJson(
+      'https://api.github.com/search/repositories?q=topic%3Adsh-plugin&sort=stars&order=desc&per_page=30',
+    ) as {
+      items?: Array<{
+        full_name?: unknown
+        description?: unknown
+        html_url?: unknown
+        stargazers_count?: unknown
+        owner?: { login?: unknown }
+        name?: unknown
+        default_branch?: unknown
+      }>
+    }
+    const repos = search.items ?? []
+    const entries: PluginManagerCatalogEntry[] = []
+    await Promise.all(repos.slice(0, 20).map(async (repo) => {
+      const fullName = typeof repo.full_name === 'string' ? repo.full_name : ''
+      const branch = typeof repo.default_branch === 'string' ? repo.default_branch : 'main'
+      if (fullName === '') return
+      let packageName: string | undefined
+      try {
+        const manifest = await this.fetchJson(
+          `https://raw.githubusercontent.com/${fullName}/${encodeURIComponent(branch)}/package.json`,
+        ) as { name?: unknown }
+        if (typeof manifest.name === 'string' && manifest.name.length > 0) packageName = manifest.name
+      } catch {
+        // A repository without a resolvable package.json is not installable from npm.
+      }
+      if (packageName === undefined) return
+      entries.push({
+        packageName,
+        repo: fullName,
+        description: typeof repo.description === 'string' ? repo.description : null,
+        homepage: typeof repo.html_url === 'string' ? repo.html_url : null,
+        stars: typeof repo.stargazers_count === 'number' ? repo.stargazers_count : 0,
+        owner: typeof repo.owner?.login === 'string' ? repo.owner.login : '',
+        name: typeof repo.name === 'string' ? repo.name : '',
+      })
+    }))
+    entries.sort((left, right) => right.stars - left.stars)
+    return { entries }
   }
 
   /**

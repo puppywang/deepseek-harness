@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import SubprocessRuntime, {
   type SubprocessHandle,
@@ -92,6 +92,7 @@ describe('PluginManagerGateway', () => {
       expect(manager.typertRemote).toMatchObject({ serviceKey: 'pluginManager', namespace: 'pluginManager' })
       expect(remoteMethods(manager)).toEqual([
         { method: 'list', invocation: { kind: 'direct' } },
+        { method: 'catalog', invocation: { kind: 'direct' } },
         { method: 'install', invocation: { kind: 'direct' } },
         { method: 'update', invocation: { kind: 'direct' } },
         { method: 'uninstall', invocation: { kind: 'direct' } },
@@ -103,6 +104,56 @@ describe('PluginManagerGateway', () => {
         source: 'template',
       }))
     })
+  })
+
+  it('discovers GitHub dsh-plugin repositories with npm package names', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url
+      if (url.includes('api.github.com/search/repositories')) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            items: [{
+              full_name: 'anysearch-team/anysearch-dsh',
+              description: 'AnySearch web search provider',
+              html_url: 'https://github.com/anysearch-team/anysearch-dsh',
+              stargazers_count: 42,
+              owner: { login: 'anysearch-team' },
+              name: 'anysearch-dsh',
+              default_branch: 'main',
+            }],
+          }),
+        } as Response
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ name: '@anysearch/anysearch-dsh' }),
+      } as Response
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      await withPluginEnv(profileFixture(), async () => {
+        const { manager } = await harness()
+        const catalog = await manager.catalog()
+        expect(catalog.entries).toEqual([
+          expect.objectContaining({
+            packageName: '@anysearch/anysearch-dsh',
+            repo: 'anysearch-team/anysearch-dsh',
+            stars: 42,
+          }),
+        ])
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('throws when restarting without a launcher-provided appExit', async () => {

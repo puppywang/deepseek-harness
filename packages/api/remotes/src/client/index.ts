@@ -13,6 +13,8 @@ export type { TypertClientRemote as ClientRemote } from '@deepseek-ai/dsh-typert
 export type { PluginInventorySnapshot } from '@deepseek-ai/dsh-host-plugin-inventory/types'
 export type {
   InstalledPluginView,
+  PluginManagerCatalog,
+  PluginManagerCatalogEntry,
   PluginManagerInstallRequest,
   PluginManagerMutation,
   PluginManagerPackageRequest,

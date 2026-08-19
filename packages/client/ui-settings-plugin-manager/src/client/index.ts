@@ -33,6 +33,13 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-plugin-manager: dictionaries')
 
   const t = ctx.locale.bind(NS)
+  const catalog: PluginManagerSettingsTabInjected['catalog'] = async () => {
+    const result = await ctx.remote.pluginManager.catalog()
+    if (!result.ok) {
+      throw new Error(`pluginManager.catalog failed: ${result.error.code}: ${result.error.message}`)
+    }
+    return result.value
+  }
   const list: PluginManagerSettingsTabInjected['list'] = async () => {
     const result = await ctx.remote.pluginManager.list()
     if (!result.ok) {
@@ -68,7 +75,7 @@ export function apply(ctx: ClientContext): void {
     }
     return result.value
   }
-  const injected = (): PluginManagerSettingsTabInjected => ({ list, install, update, uninstall, restart })
+  const injected = (): PluginManagerSettingsTabInjected => ({ catalog, list, install, update, uninstall, restart })
 
   ctx.slots.inject('settings.plugins.tab', () => ctx.slots.register({
     name: 'settings.plugins.tab',

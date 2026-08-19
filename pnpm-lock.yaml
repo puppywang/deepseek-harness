@@ -1366,6 +1366,9 @@ importers:
 
   packages/bundle/web-app:
     dependencies:
+      '@anysearch/anysearch-dsh':
+        specifier: ^0.1.1
+        version: 0.1.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-credentials@packages+credentials+credentials)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-web@packages+web+web)
       '@deepseek-ai/dsh-agent-presets':
         specifier: workspace:^
         version: link:../../preset/agent-presets
@@ -1492,6 +1495,9 @@ importers:
       '@deepseek-ai/dsh-cordis-host-runner':
         specifier: workspace:^
         version: link:../../extensions/cordis-host-runner
+      '@deepseek-ai/dsh-credentials':
+        specifier: workspace:^
+        version: link:../../credentials/credentials
       '@deepseek-ai/dsh-host-apiproxy':
         specifier: workspace:^
         version: link:../../host/apiproxy
@@ -1537,6 +1543,12 @@ importers:
       '@deepseek-ai/dsh-storage-json':
         specifier: workspace:^
         version: link:../../storage/storage-json
+      '@deepseek-ai/dsh-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+      '@deepseek-ai/dsh-web':
+        specifier: workspace:^
+        version: link:../../web/web
       '@deepseek-ai/dsh-web-frontend':
         specifier: workspace:^
         version: link:../../../apps/web
@@ -9122,6 +9134,15 @@ packages:
       zod:
         optional: true
 
+  '@anysearch/anysearch-dsh@0.1.1':
+    resolution: {integrity: sha512-ff/VeB8t/cQDBh189MmRZQFU/daBMfTUIhDQFUobOkCaGgjyxMTCu3tbBG4HJeqygUxUP3IAWneIZtABQRDeoQ==}
+    engines: {node: ^22.19.0 || >=24.0.0}
+    peerDependencies:
+      '@deepseek-ai/cordis': '>=4.0.1-rc.1 <5'
+      '@deepseek-ai/dsh-credentials': '>=0.1.0-rc.6 <1'
+      '@deepseek-ai/dsh-tools': '>=0.1.0-rc.6 <1'
+      '@deepseek-ai/dsh-web': '>=0.1.0-rc.6 <1'
+
   '@asamuzakjp/css-color@5.1.11':
     resolution: {integrity: sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
@@ -15457,6 +15478,14 @@ snapshots:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
       zod: 4.4.3
+
+  '@anysearch/anysearch-dsh@0.1.1(@deepseek-ai/cordis@vendor+cordis)(@deepseek-ai/dsh-credentials@packages+credentials+credentials)(@deepseek-ai/dsh-tools@packages+core+tools)(@deepseek-ai/dsh-web@packages+web+web)':
+    dependencies:
+      '@deepseek-ai/cordis': link:vendor/cordis
+      '@deepseek-ai/dsh-credentials': link:packages/credentials/credentials
+      '@deepseek-ai/dsh-tools': link:packages/core/tools
+      '@deepseek-ai/dsh-web': link:packages/web/web
+      '@deepseek-ai/schemastery': link:vendor/schemastery
 
   '@asamuzakjp/css-color@5.1.11':
     dependencies:

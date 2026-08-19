@@ -44,3 +44,26 @@ export interface PluginManagerRestartResult {
   /** True when the restart request was accepted and the running dsh is shutting down. */
   restarted: true
 }
+
+/** One GitHub `dsh-plugin` repository discovered for installation. */
+export interface PluginManagerCatalogEntry {
+  /** npm package name read from the repository's package.json. */
+  packageName: string
+  /** GitHub `owner/repo` slug. */
+  repo: string
+  /** Repository description, when GitHub provides one. */
+  description: string | null
+  /** Repository homepage or HTML URL. */
+  homepage: string | null
+  /** Star count used to rank the directory. */
+  stars: number
+  /** GitHub owner login. */
+  owner: string
+  /** Repository name. */
+  name: string
+}
+
+/** pluginManager.catalog response. */
+export interface PluginManagerCatalog {
+  entries: readonly PluginManagerCatalogEntry[]
+}

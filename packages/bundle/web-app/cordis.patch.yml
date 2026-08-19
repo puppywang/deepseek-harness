@@ -106,6 +106,17 @@
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
 
+    # AnySearch web search provider and advanced tools, shipped with the web app.
+    - id: web
+      config:
+        searchProvider: anysearch
+
+    - insert:
+        - id: web-search-anysearch
+          name: '@anysearch/anysearch-dsh'
+          config:
+            apiKeyEnv: ANYSEARCH_API_KEY
+
     # Ordinary provider for the parsed Web flags. Its plugin-level injection
     # waits for cmdlineArgs; no launcher metadata or special row kind is needed.
     - id: web-startup

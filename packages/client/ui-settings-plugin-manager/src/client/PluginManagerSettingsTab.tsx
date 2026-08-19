@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import type {
   InstalledPluginView,
+  PluginManagerCatalog,
+  PluginManagerCatalogEntry,
   PluginManagerMutation,
   PluginManagerRestartResult,
   PluginManagerSnapshot,
@@ -18,6 +20,8 @@ import css from './PluginManagerSettingsTab.module.css'
 export interface PluginManagerSettingsTabInjected {
   /** Read the installed plugin snapshot. */
   list: () => Promise<PluginManagerSnapshot>
+  /** Read the GitHub `dsh-plugin` catalog. */
+  catalog: () => Promise<PluginManagerCatalog>
   /** Install one package; `enable` adds its Loader row. */
   install: (request: { spec: string; enable: boolean }) => Promise<PluginManagerMutation>
   /** Update one installed package. */
@@ -45,12 +49,27 @@ function matches(plugin: InstalledPluginView, normalizedQuery: string): boolean 
   return plugin.packageName.toLocaleLowerCase().includes(normalizedQuery)
 }
 
+/** Whether one catalog row matches the local search query. */
+function matchesEntry(entry: PluginManagerCatalogEntry, normalizedQuery: string): boolean {
+  if (normalizedQuery.length === 0) return true
+  return `${entry.packageName} ${entry.description ?? ''} ${entry.repo}`
+    .toLocaleLowerCase()
+    .includes(normalizedQuery)
+}
+
+type CatalogState =
+  | { readonly status: 'loading' }
+  | { readonly status: 'error' }
+  | { readonly status: 'ready'; readonly entries: readonly PluginManagerCatalogEntry[] }
+
 /** Render the installed-plugin manager. */
 export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): ReactNode {
-  const { list, install, update, uninstall, restart, t } = props
+  const { catalog, list, install, update, uninstall, restart, t } = props
   const [request, setRequest] = useState(0)
   const [query, setQuery] = useState('')
   const [state, setState] = useState<ViewState>({ status: 'loading' })
+  const [catalogState, setCatalogState] = useState<CatalogState>({ status: 'loading' })
+  const [catalogQuery, setCatalogQuery] = useState('')
   const [spec, setSpec] = useState('')
   const [enableRow, setEnableRow] = useState(true)
   const [busyPackage, setBusyPackage] = useState<string>()
@@ -69,12 +88,32 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
     return () => { current = false }
   }, [list, request])
 
+  useEffect(() => {
+    let current = true
+    void Promise.resolve().then(() => catalog()).then(
+      (result) => { if (current) setCatalogState({ status: 'ready', entries: result.entries }) },
+      () => { if (current) setCatalogState({ status: 'error' }) },
+    )
+    return () => { current = false }
+  }, [catalog])
+
   const normalizedQuery = query.trim().toLocaleLowerCase()
+  const normalizedCatalogQuery = catalogQuery.trim().toLocaleLowerCase()
   const plugins = useMemo(
     () => state.status === 'ready'
       ? state.snapshot.plugins.filter(plugin => matches(plugin, normalizedQuery))
       : [],
     [normalizedQuery, state],
+  )
+  const catalogEntries = useMemo(
+    () => catalogState.status === 'ready'
+      ? catalogState.entries.filter(entry => matchesEntry(entry, normalizedCatalogQuery))
+      : [],
+    [catalogState, normalizedCatalogQuery],
+  )
+  const installedNames = useMemo(
+    () => new Set(state.status === 'ready' ? state.snapshot.plugins.map(plugin => plugin.packageName) : []),
+    [state],
   )
 
   const refresh = (): void => {
@@ -115,6 +154,67 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
     <div className={css.tab}>
       <p className={css.intro}>{t('intro')}</p>
       <p className={css.restart}>{t('restartHint')}</p>
+
+      <h3 className={css.installTitle}>{t('discoverTitle')}</h3>
+      <p className={css.intro}>{t('discoverIntro')}</p>
+      <div className={css.searchRow}>
+        <IconSearchOutline16 size={14} />
+        <input
+          className={css.input}
+          type="search"
+          value={catalogQuery}
+          placeholder={t('discoverSearch')}
+          aria-label={t('discoverSearch')}
+          onChange={(event) => { setCatalogQuery(event.target.value) }}
+        />
+      </div>
+      {catalogState.status === 'loading' ? <p className={css.intro}>{t('discoverLoading')}</p> : null}
+      {catalogState.status === 'error'
+        ? (
+          <p className={css.error}>
+            {t('discoverFailed')}
+            <button
+              type="button"
+              onClick={() => { setCatalogState({ status: 'loading' }); void Promise.resolve().then(() => catalog()).then(
+                (result) => { setCatalogState({ status: 'ready', entries: result.entries }) },
+                () => { setCatalogState({ status: 'error' }) },
+              ) }}
+            >
+              {t('retry')}
+            </button>
+          </p>
+        )
+        : null}
+      {catalogState.status === 'ready' && catalogEntries.length === 0
+        ? <p className={css.intro}>{t('discoverEmpty')}</p>
+        : null}
+      {catalogState.status === 'ready' && catalogEntries.length > 0
+        ? (
+          <ul className={css.list}>
+            {catalogEntries.map((entry) => {
+              const installed = installedNames.has(entry.packageName)
+              return (
+                <li className={css.row} key={entry.packageName}>
+                  <div className={css.rowHead}>
+                    <code className={css.packageName}>{entry.packageName}</code>
+                    {entry.stars > 0 ? <span className={css.meta}>★ {entry.stars}</span> : null}
+                    <a className={css.meta} href={entry.homepage ?? undefined} target="_blank" rel="noreferrer">{entry.repo}</a>
+                  </div>
+                  <div className={css.rowActions}>
+                    <button
+                      type="button"
+                      disabled={installed || busyPackage !== undefined}
+                      onClick={() => { void runMutation(() => install({ spec: entry.packageName, enable: true }), entry.packageName) }}
+                    >
+                      {installed ? t('discoverInstalled') : busyPackage === entry.packageName ? t('discoverInstalling') : t('discoverInstall')}
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )
+        : null}
 
       <form
         className={css.installForm}

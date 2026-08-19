@@ -7,6 +7,8 @@ export type PluginManagerLocaleKey =
   | 'dependency' | 'template' | 'installTitle' | 'installSpec' | 'installPlaceholder'
   | 'enableRow' | 'install' | 'installing' | 'update' | 'updating' | 'uninstall' | 'uninstalling'
   | 'removeConfirm' | 'empty' | 'noMatch' | 'loadFailed' | 'retry' | 'mutateFailed'
+  | 'discoverTitle' | 'discoverIntro' | 'discoverSearch' | 'discoverEmpty' | 'discoverFailed'
+  | 'discoverLoading' | 'discoverInstall' | 'discoverInstalling' | 'discoverInstalled'
   | 'restartConfirmTitle' | 'restartConfirmDescription' | 'restartAcknowledge'
   | 'restartCancel' | 'restartConfirm' | 'restarting' | 'restartFailed'
 
@@ -40,6 +42,15 @@ export const en: Record<PluginManagerLocaleKey, string> = {
   loadFailed: 'Loading installed plugins failed.',
   retry: 'Retry',
   mutateFailed: 'The plugin operation failed.',
+  discoverTitle: 'Discover plugins',
+  discoverIntro: 'Community plugins tagged dsh-plugin on GitHub.',
+  discoverSearch: 'Search plugins',
+  discoverEmpty: 'No plugins match this search.',
+  discoverFailed: 'Loading the plugin catalog failed.',
+  discoverLoading: 'Loading plugins\u2026',
+  discoverInstall: 'Install',
+  discoverInstalling: 'Installing\u2026',
+  discoverInstalled: 'Installed',
   restartConfirmTitle: 'Restart dsh to apply changes?',
   restartConfirmDescription: 'A restart is required to finish this plugin change. Restarting will interrupt conversations that are currently running. Confirm that you want to continue.',
   restartAcknowledge: 'I understand running conversations will be interrupted.',
@@ -79,6 +90,15 @@ export const zh: Record<PluginManagerLocaleKey, string> = {
   loadFailed: '读取已安装插件失败。',
   retry: '重试',
   mutateFailed: '插件操作失败。',
+  discoverTitle: '发现插件',
+  discoverIntro: '来自 GitHub 上标记为 dsh-plugin 的社区插件。',
+  discoverSearch: '搜索插件',
+  discoverEmpty: '没有匹配的插件。',
+  discoverFailed: '读取插件目录失败。',
+  discoverLoading: '正在加载插件\u2026',
+  discoverInstall: '安装',
+  discoverInstalling: '安装中\u2026',
+  discoverInstalled: '已安装',
   restartConfirmTitle: '需要重启 dsh 才能完成变更？',
   restartConfirmDescription: '完成这项插件变更需要重启 dsh。重启会中断当前正在运行的对话。请确认后继续。',
   restartAcknowledge: '我已知晓正在进行的对话会被中断。',
