@@ -18,7 +18,7 @@ function findItem(items: readonly MenuItemConstructorOptions[], label: string): 
 }
 
 describe('buildApplicationMenuTemplate', () => {
-  it('builds the macOS system menu with edit roles and hides dev entries in production', () => {
+  it('builds the macOS system menu with edit roles and keeps DevTools available in production', () => {
     const template = buildApplicationMenuTemplate({
       platform: 'darwin', zh: false, developerTools: false, openExternal,
     })
@@ -31,7 +31,7 @@ describe('buildApplicationMenuTemplate', () => {
     ])
     const view = findItem(template, 'View')
     expect(submenuOf(view).some(item => item.role === 'reload')).toBe(false)
-    expect(submenuOf(view).some(item => item.role === 'toggleDevTools')).toBe(false)
+    expect(submenuOf(view).some(item => item.role === 'toggleDevTools')).toBe(true)
     expect(template.find(item => item.role === 'windowMenu')).toBeTruthy()
   })
 
@@ -45,7 +45,7 @@ describe('buildApplicationMenuTemplate', () => {
     expect(submenuOf(file)).toEqual([{ role: 'quit', label: '退出' }])
     const view = findItem(template, '视图')
     expect(submenuOf(view).map(item => item.role)).toEqual([
-      'reload', 'toggleDevTools', undefined, 'resetZoom', 'zoomIn', 'zoomOut',
+      'reload', undefined, 'toggleDevTools', undefined, 'resetZoom', 'zoomIn', 'zoomOut',
       undefined, 'togglefullscreen',
     ])
     const window = findItem(template, '窗口')

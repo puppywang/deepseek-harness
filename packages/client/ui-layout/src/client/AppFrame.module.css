@@ -42,6 +42,25 @@
   border-left: 1px solid var(--dsw-alias-border-l2);
 }
 
+/* The bundled file explorer (dsh-plugin-file-explorer) overlays the right edge
+   with a fixed rail/sidebar. It tries to pad its own hardcoded center column
+   class, but CSS Modules hashes differ across builds, so we own the layout
+   accommodation here for the real AppFrame columns. */
+:global(body[data-fe-sidebar="rail"]) .centerCol,
+:global(body[data-fe-sidebar="rail"]) .detailsCol {
+  padding-right: 44px;
+}
+
+:global(body[data-fe-sidebar="open"]) .centerCol,
+:global(body[data-fe-sidebar="open"]) .detailsCol {
+  padding-right: calc(44px + var(--fe-sidebar-width, 280px));
+}
+
+:global(body[data-fe-sidebar]:not([data-fe-resizing])) .centerCol,
+:global(body[data-fe-sidebar]:not([data-fe-resizing])) .detailsCol {
+  transition: padding-right 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
 /* The details subtree stays mounted at zero width, so its border must not paint
    a 1px seam. The collapsed sidebar instead retains a bordered compact rail. */
 .frame[data-details-collapsed] .detailsCol {

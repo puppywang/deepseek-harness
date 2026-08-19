@@ -6,8 +6,8 @@
  * while every product action lives in the Web UI. Windows and Linux hide the
  * bar until Alt is pressed (`autoHideMenuBar`); macOS keeps its system menu
  * bar because the Edit roles there are the only thing that makes ⌘C/⌘V/⌘X/⌘A
- * work inside the browser window. Reload and DevTools entries appear only in
- * development, matching the window's `--dev` behavior.
+ * work inside the browser window. Reload appears only in development; DevTools
+ * is always available in the View menu so packaged builds can still be debugged.
  */
 
 import type { MenuItemConstructorOptions } from 'electron'
@@ -112,11 +112,12 @@ export function buildApplicationMenuTemplate(options: ApplicationMenuOptions): M
   if (options.developerTools) {
     viewItems.push(
       { role: 'reload', label: copy.reload },
-      { role: 'toggleDevTools', label: copy.devTools },
       { type: 'separator' },
     )
   }
   viewItems.push(
+    { role: 'toggleDevTools', label: copy.devTools },
+    { type: 'separator' },
     { role: 'resetZoom', label: copy.resetZoom },
     { role: 'zoomIn', label: copy.zoomIn },
     { role: 'zoomOut', label: copy.zoomOut },
