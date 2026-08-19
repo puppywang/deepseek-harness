@@ -140,6 +140,45 @@ function pruneRuntimeArtifacts(runtimeRoot) {
   )
 }
 
+/**
+ * Remove the redundant pnpm launcher binaries from the deployed runtime.
+ * `@pnpm/exe` ships one ~90 MiB native executable under several command names
+ * (`pn`, `pnpm`, `pnpx`, `pnx`) plus a duplicate platform package such as
+ * `@pnpm/win-x64`. The dsh plugin manager only invokes `pnpm(.exe)`, so the
+ * other copies are pure installer bloat.
+ * @param runtimeRoot - deployed `dist/desktop-runtime` root.
+ * @returns the freed byte count.
+ */
+function pruneRedundantPnpmArtifacts(runtimeRoot) {
+  const pnpmRoot = join(runtimeRoot, 'node_modules', '@pnpm')
+  if (!existsSync(pnpmRoot)) return 0
+  let removedBytes = 0
+  const removePath = target => {
+    if (!existsSync(target)) return
+    const stat = lstatSync(target)
+    if (stat.isDirectory()) {
+      removedBytes += collectDirectorySize(target)
+      rmSync(target, { recursive: true, force: true })
+    } else {
+      removedBytes += stat.size
+      rmSync(target, { force: true })
+    }
+  }
+
+  const exeRoot = join(pnpmRoot, 'exe')
+  const redundantNames = ['pn', 'pn.exe', 'pnpx', 'pnpx.exe', 'pnx', 'pnx.exe']
+  if (process.platform === 'win32') redundantNames.push('pnpm')
+  else redundantNames.push('pnpm.exe')
+  for (const name of redundantNames) {
+    removePath(join(exeRoot, name))
+  }
+  for (const entry of readdirSync(pnpmRoot)) {
+    if (entry === 'exe') continue
+    removePath(join(pnpmRoot, entry))
+  }
+  return removedBytes
+}
+
 try {
   rmSync(runtimeOutput, { recursive: true, force: true })
   const childEnvironment = Object.fromEntries(
@@ -166,6 +205,7 @@ try {
   mkdirSync(dirname(runtimeOutput), { recursive: true })
   materialize(deployRoot, runtimeOutput)
   const foreignPlatform = pruneForeignPlatformPackages(runtimeOutput)
+  const redundantPnpm = pruneRedundantPnpmArtifacts(runtimeOutput)
   pruneRuntimeArtifacts(runtimeOutput)
 
   for (const packageName of DSH_BOOT_RUNTIME_PACKAGES) {
@@ -199,6 +239,7 @@ try {
     `desktop runtime: removed ${String(foreignPlatform.removedPackages)} foreign-platform packages `
     + `(${(foreignPlatform.removedBytes / 1024 / 1024).toFixed(1)} MiB)`,
   )
+  console.log(`desktop runtime: removed redundant pnpm launchers (${(redundantPnpm / 1024 / 1024).toFixed(1)} MiB)`)
   console.log(`desktop runtime: ${basename(entry)} and production dependencies copied to ${runtimeOutput}`)
   console.log(`desktop runtime: Node ${process.version} copied to ${nodeOutput}`)
 } finally {
