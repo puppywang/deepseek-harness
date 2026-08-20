@@ -78,3 +78,4 @@ minimumReleaseAgeExclude:
 
 patchedDependencies:
   node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch
+  dsh-plugin-file-explorer@0.3.0: patches/dsh-plugin-file-explorer@0.3.0.patch

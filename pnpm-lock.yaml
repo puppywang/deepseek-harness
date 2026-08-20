@@ -10,6 +10,7 @@ overrides:
   '@electron/get': 3.1.0
 
 patchedDependencies:
+  dsh-plugin-file-explorer@0.3.0: e8ab4d6d5891a2a9f75dfc183796b85f8bbddb6d83a37d6e857ff2ff9cbf430f
   node-pty@1.2.0-beta.15: b40ae545608897914bd25fb009c97eeac478c34e8a910298ddcb01b746534bb0
 
 importers:
@@ -1607,7 +1608,7 @@ importers:
         version: 15.0.0
       dsh-plugin-file-explorer:
         specifier: ^0.3.0
-        version: 0.3.0
+        version: 0.3.0(patch_hash=e8ab4d6d5891a2a9f75dfc183796b85f8bbddb6d83a37d6e857ff2ff9cbf430f)
       open:
         specifier: ^11.0.0
         version: 11.0.1
@@ -19134,7 +19135,7 @@ snapshots:
 
   dotenv@16.4.5: {}
 
-  dsh-plugin-file-explorer@0.3.0: {}
+  dsh-plugin-file-explorer@0.3.0(patch_hash=e8ab4d6d5891a2a9f75dfc183796b85f8bbddb6d83a37d6e857ff2ff9cbf430f): {}
 
   dts-resolver@3.0.0(oxc-resolver@11.20.0):
     optionalDependencies:
