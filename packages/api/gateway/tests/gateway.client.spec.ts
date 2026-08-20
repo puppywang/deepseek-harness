@@ -404,6 +404,20 @@ describe('Client Typert API', () => {
     await disposeMultipleScoped()
   })
 
+  it('allows a Remote method named install after the namespace installer rename', async () => {
+    const ctx = await bench(vi.fn<ConnectionHandle['rpc']['call']>())
+    const descriptor = {
+      ...directDescriptor(),
+      id: '@fixture/probe#probe/install',
+      method: 'install',
+    }
+    const dispose = await ctx.remote.$mount({
+      package: '@fixture/install-method',
+      descriptors: [descriptor],
+    })
+    await dispose()
+  })
+
   it('rolls back earlier descriptors when a later descriptor fails to install', async () => {
     const ctx = await bench(vi.fn<ConnectionHandle['rpc']['call']>())
     const { scope: _scope, ...first } = directDescriptor()
