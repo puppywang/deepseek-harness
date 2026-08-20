@@ -859,6 +859,23 @@ describe('compat switches', () => {
     expect(models.get('acme-r')?.compat).toEqual({ supportsDeveloperRole: false })
   })
 
+  it('ignores legacy completions-only compat fields on a pure responses route', () => {
+    const models = modelsOf({
+      'acme-responses-legacy': {
+        api: 'openai-responses',
+        baseURL: 'https://acme.test',
+        compat: { thinkingFormat: 'openai', supportsReasoningEffort: false, supportsDeveloperRole: false },
+        models: [{
+          id: 'acme-r',
+          reasoningEfforts: { off: null, high: 'high' },
+          compat: { thinkingFormat: 'deepseek', supportsReasoningEffort: true },
+        }],
+      },
+    }, 'acme-responses-legacy')
+
+    expect(models.get('acme-r')?.compat).toEqual({ supportsDeveloperRole: false })
+  })
+
   it('carries an anthropic-only switch onto an anthropic-messages route', () => {
     const models = modelsOf({
       'acme-claude': {

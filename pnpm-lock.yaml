@@ -1606,8 +1606,8 @@ importers:
         specifier: ^15.0.0
         version: 15.0.0
       dsh-plugin-file-explorer:
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.3.0
+        version: 0.3.0
       open:
         specifier: ^11.0.0
         version: 11.0.1
@@ -13011,8 +13011,8 @@ packages:
     resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
     engines: {node: '>=12'}
 
-  dsh-plugin-file-explorer@0.2.0:
-    resolution: {integrity: sha512-jDcmN2KiTx9jTBi2StR4OccseXh12sC3VDtH+KQ+ujlh2YgrkHGsO3rJuklfBcdW6GDIn3iWr1z3sAVyacyHIQ==}
+  dsh-plugin-file-explorer@0.3.0:
+    resolution: {integrity: sha512-iH58WYwpH8i/PAYg3jUpOMZuDdz69p8eI2B4BgkcXAF8ydczY5yoRUdw5CSuXb6Qjw5nxDgVbBkLn6PXhj74ow==}
 
   dts-resolver@3.0.0:
     resolution: {integrity: sha512-1T1f+z+4tl9XD+m+0HBgWoL/nm0bOIffyWaUuUSBlFg/86IWvfx+wjNaO/ybU0AJzG9/Mi5hBUgGV6zCmWEN7Q==}
@@ -19134,7 +19134,7 @@ snapshots:
 
   dotenv@16.4.5: {}
 
-  dsh-plugin-file-explorer@0.2.0: {}
+  dsh-plugin-file-explorer@0.3.0: {}
 
   dts-resolver@3.0.0(oxc-resolver@11.20.0):
     optionalDependencies:

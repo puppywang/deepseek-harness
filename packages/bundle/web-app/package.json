@@ -110,7 +110,7 @@
     "@deepseek-ai/dsh-session-reference": "workspace:^",
     "@deepseek-ai/dsh-session-log-export": "workspace:^",
     "@anysearch/anysearch-dsh": "^0.1.1",
-    "dsh-plugin-file-explorer": "^0.2.0",
+    "dsh-plugin-file-explorer": "^0.3.0",
     "@deepseek-ai/dsh-session-stats": "workspace:^",
     "@deepseek-ai/dsh-storage": "workspace:^",
     "@deepseek-ai/dsh-storage-domain": "workspace:^",

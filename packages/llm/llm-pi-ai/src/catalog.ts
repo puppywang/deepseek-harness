@@ -470,6 +470,29 @@ function configuredCompatEntries(compat: PiAiCompatProfile | undefined): readonl
 }
 
 /**
+ * The three Responses protocols share one compat type in pi-ai. They do not
+ * take the completions-only reasoning fields the pre-merge fork UI used to
+ * write automatically; this migration lets a profile keep those fields while
+ * the deployment converts a route to Responses without a hard failure.
+ */
+const RESPONSES_APIS = new Set(['openai-responses', 'azure-openai-responses', 'openai-codex-responses'])
+
+/** Legacy fork-era compat fields that exist only on `openai-completions`. */
+const LEGACY_COMPLETIONS_ONLY_COMPAT_FIELDS = new Set(['thinkingFormat', 'supportsReasoningEffort'])
+
+/**
+ * Whether a compat field should be ignored as legacy migration residue on a
+ * Responses route. The field is still meaningful on completions models, so a
+ * mixed route keeps applying it where the protocol supports it.
+ * @param field - configured compat field name.
+ * @param api - the model's resolved wire protocol.
+ * @returns true when the field is completions-only and the model speaks Responses.
+ */
+function isLegacyCompletionsOnlyMigration(field: string, api: string): boolean {
+  return RESPONSES_APIS.has(api) && LEGACY_COMPLETIONS_ONLY_COMPAT_FIELDS.has(field)
+}
+
+/**
  * The protocols offering one compat field, in {@link COMPAT_GATES} order.
  * @param field - configured compat field name.
  * @returns the protocols whose compat takes it; empty when none does, which
@@ -751,10 +774,12 @@ function resolveModelCompat(
   const gate = compatGate(api)
   const configured: Record<string, unknown> = {}
   for (const [field, value] of configuredCompatEntries(route)) {
+    if (isLegacyCompletionsOnlyMigration(field, api)) continue
     if (gate?.[field] !== 'offer') continue
     configured[field] = value
   }
   for (const [field, value] of configuredCompatEntries(entry.compat)) {
+    if (isLegacyCompletionsOnlyMigration(field, api)) continue
     if (gate?.[field] !== 'offer') {
       const offered = offeredCompatFields(api)
       invalid(provider, `model "${entry.id}" sets compat "${field}", but its api is "${api}", which does not`
@@ -906,6 +931,7 @@ export function resolveRouteModels(request: RouteCatalogRequest): RouteCatalog {
   for (const [field] of configuredCompatEntries(request.compat)) {
     const takers = compatProtocols(field)
     if (models.some(model => takers.includes(model.api))) continue
+    if (models.every(model => isLegacyCompletionsOnlyMigration(field, model.api))) continue
     invalid(provider, `sets compat "${field}", but no model on the route speaks a protocol that takes it;`
       + ` it exists on ${takers.join(', ')}`)
   }
