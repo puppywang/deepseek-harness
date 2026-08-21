@@ -13,7 +13,7 @@
 import type { MenuItemConstructorOptions } from 'electron'
 
 /** Canonical external targets for the Help menu. */
-const REPOSITORY_URL = 'https://github.com/deepseek-ai/deepseek-harness'
+const REPOSITORY_URL = 'https://github.com/puppywang/deepseek-harness'
 const RELEASES_URL = `${REPOSITORY_URL}/releases`
 const DOCS_URL = `${REPOSITORY_URL}/tree/master/docs`
 const LINUX_DO_URL = 'https://linux.do/'

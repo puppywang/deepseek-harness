@@ -64,9 +64,9 @@ describe('buildApplicationMenuTemplate', () => {
     expect(targets).toHaveLength(4)
     for (const click of targets) click()
     expect(openExternal.mock.calls.map(call => String(call[0]))).toEqual([
-      'https://github.com/deepseek-ai/deepseek-harness',
-      'https://github.com/deepseek-ai/deepseek-harness/tree/master/docs',
-      'https://github.com/deepseek-ai/deepseek-harness/releases',
+      'https://github.com/puppywang/deepseek-harness',
+      'https://github.com/puppywang/deepseek-harness/tree/master/docs',
+      'https://github.com/puppywang/deepseek-harness/releases',
       'https://linux.do/',
     ])
   })
