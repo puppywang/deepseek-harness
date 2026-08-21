@@ -2,6 +2,7 @@
 
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { PluginManagerCatalogRequest } from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import {
   PluginManagerSettingsTab,
@@ -33,8 +34,12 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-settings-plugin-manager: dictionaries')
 
   const t = ctx.locale.bind(NS)
-  const catalog: PluginManagerSettingsTabInjected['catalog'] = async () => {
-    const result = await ctx.remote.pluginManager.catalog()
+  // The Remote contract has one optional parameter, but its generated client
+  // validates positional arity; always pass the request slot explicitly.
+  const catalog: PluginManagerSettingsTabInjected['catalog'] = async (
+    request?: PluginManagerCatalogRequest,
+  ) => {
+    const result = await ctx.remote.pluginManager.catalog(request ?? {})
     if (!result.ok) {
       throw new Error(`pluginManager.catalog failed: ${result.error.code}: ${result.error.message}`)
     }
