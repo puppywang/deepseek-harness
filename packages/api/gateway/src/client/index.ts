@@ -457,16 +457,18 @@ class RemoteNamespaceService extends Service {
   }
 
   installDirect(descriptor: InvocationDescriptor, token: MountToken): void {
-    this.mount(descriptor.method, 'direct', { descriptor, token })
+    this.#mount(descriptor.method, 'direct', { descriptor, token })
   }
 
   installScoped(descriptor: InvocationDescriptor, projection: ScopedProjection, token: MountToken): void {
-    this.mount(descriptor.method, 'scoped', { descriptor, projection, token })
+    this.#mount(descriptor.method, 'scoped', { descriptor, projection, token })
   }
 
-  private mount(method: string, kind: 'direct', value: DirectMethod): void
-  private mount(method: string, kind: 'scoped', value: ScopedMethod): void
-  private mount(method: string, kind: 'direct' | 'scoped', value: DirectMethod | ScopedMethod): void {
+  // A true ECMAScript private method deliberately keeps this helper off the
+  // service prototype: ordinary `private` methods are visible there, so a
+  // generated Remote method with the same spelling would be mistaken for a
+  // service implementation (the original `install` collision).
+  #mount(method: string, kind: 'direct' | 'scoped', value: DirectMethod | ScopedMethod): void {
     this.assertMethodAvailable(method)
     let record = this.methods.get(method)
     const fresh = record === undefined

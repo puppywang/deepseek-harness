@@ -404,7 +404,7 @@ describe('Client Typert API', () => {
     await disposeMultipleScoped()
   })
 
-  it('allows a Remote method named install after the namespace installer rename', async () => {
+  it('allows Remote methods named after former private helpers', async () => {
     const ctx = await bench(vi.fn<ConnectionHandle['rpc']['call']>())
     const descriptor = {
       ...directDescriptor(),
@@ -416,6 +416,17 @@ describe('Client Typert API', () => {
       descriptors: [descriptor],
     })
     await dispose()
+
+    const mountDescriptor = {
+      ...directDescriptor(),
+      id: '@fixture/probe#probe/mount',
+      method: 'mount',
+    }
+    const disposeMount = await ctx.remote.$mount({
+      package: '@fixture/mount-method',
+      descriptors: [mountDescriptor],
+    })
+    await disposeMount()
   })
 
   it('rolls back earlier descriptors when a later descriptor fails to install', async () => {
