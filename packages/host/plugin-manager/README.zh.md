@@ -18,4 +18,4 @@
 
 - **单一 profile**——本服务管理 `web` profile（`resolveProfileDir('web')`）；暂不暴露多 profile 管理。
 - **原生模块可能无法热加载**——服务会立即重新应用 patch 栈；若某个插件热加载失败，会报告其 Loader 错误，并以进程重启作为回退。
-- **目录依赖 GitHub 公共搜索与 raw 文件**——未认证的速率限制适用；无法解析 `package.json` 的仓库会被跳过。
+- **目录依赖 npm 公共搜索与包 manifest**——npm 可用性和速率限制适用；只有关键字但没有 DSH bundle/client manifest 的包会被跳过。校验结果会短暂缓存。

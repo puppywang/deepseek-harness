@@ -45,21 +45,21 @@ export interface PluginManagerRestartResult {
   restarted: true
 }
 
-/** One GitHub `dsh-plugin` repository discovered for installation. */
+/** One installable npm package discovered from the `dsh-plugin` keyword directory. */
 export interface PluginManagerCatalogEntry {
-  /** npm package name read from the repository's package.json. */
+  /** npm package name verified to declare a DSH bundle or client role. */
   packageName: string
-  /** GitHub `owner/repo` slug. */
+  /** Source repository slug when npm metadata provides one; otherwise the package name. */
   repo: string
-  /** Repository description, when GitHub provides one. */
+  /** Package description, when npm provides one. */
   description: string | null
-  /** Repository homepage or HTML URL. */
+  /** Package homepage, repository page, or npm page. */
   homepage: string | null
-  /** Star count used to rank the directory. */
-  stars: number
-  /** GitHub owner login. */
+  /** Monthly downloads used to rank the directory. */
+  downloads: number
+  /** Repository owner or npm scope; a synthetic owner is used for unscoped names. */
   owner: string
-  /** Repository name. */
+  /** Repository name or final package-name segment. */
   name: string
 }
 

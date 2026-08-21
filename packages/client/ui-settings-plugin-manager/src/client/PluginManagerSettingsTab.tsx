@@ -20,7 +20,7 @@ import css from './PluginManagerSettingsTab.module.css'
 export interface PluginManagerSettingsTabInjected {
   /** Read the installed plugin snapshot. */
   list: () => Promise<PluginManagerSnapshot>
-  /** Read the GitHub `dsh-plugin` catalog. */
+  /** Read the npm `dsh-plugin` catalog. */
   catalog: () => Promise<PluginManagerCatalog>
   /** Install one package; `enable` adds its Loader row. */
   install: (request: { spec: string; enable: boolean }) => Promise<PluginManagerMutation>
@@ -174,6 +174,7 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
           <p className={css.error}>
             {t('discoverFailed')}
             <button
+              className={css.inlineButton}
               type="button"
               onClick={() => { setCatalogState({ status: 'loading' }); void Promise.resolve().then(() => catalog()).then(
                 (result) => { setCatalogState({ status: 'ready', entries: result.entries }) },
@@ -197,11 +198,14 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
                 <li className={css.row} key={entry.packageName}>
                   <div className={css.rowHead}>
                     <code className={css.packageName}>{entry.packageName}</code>
-                    {entry.stars > 0 ? <span className={css.meta}>★ {entry.stars}</span> : null}
+                    {entry.downloads > 0
+                      ? <span className={css.meta}>{t('monthlyDownloads')}: {new Intl.NumberFormat().format(entry.downloads)}</span>
+                      : null}
                     <a className={css.meta} href={entry.homepage ?? undefined} target="_blank" rel="noreferrer">{entry.repo}</a>
                   </div>
                   <div className={css.rowActions}>
                     <button
+                      className={css.primaryButton}
                       type="button"
                       disabled={installed || busyPackage !== undefined}
                       onClick={() => { void runMutation(() => install({ spec: entry.packageName, enable: true }), entry.packageName) }}
@@ -274,7 +278,7 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
         ? (
           <p className={css.error}>
             {t('loadFailed')}
-            <button type="button" onClick={() => { setState({ status: 'loading' }); refresh() }}>{t('retry')}</button>
+            <button className={css.inlineButton} type="button" onClick={() => { setState({ status: 'loading' }); refresh() }}>{t('retry')}</button>
           </p>
         )
         : null}
@@ -296,6 +300,7 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
                 </div>
                 <div className={css.rowActions}>
                   <button
+                    className={css.ghostButton}
                     type="button"
                     disabled={busyPackage !== undefined}
                     onClick={() => { void runMutation(() => update({ packageName: plugin.packageName }), plugin.packageName) }}
@@ -303,6 +308,7 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
                     {busyPackage === plugin.packageName ? t('updating') : t('update')}
                   </button>
                   <button
+                    className={css.dangerButton}
                     type="button"
                     disabled={busyPackage !== undefined || plugin.source === 'template'}
                     onClick={() => {

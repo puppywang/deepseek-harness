@@ -106,36 +106,64 @@ describe('PluginManagerGateway', () => {
     })
   })
 
-  it('discovers GitHub dsh-plugin repositories with npm package names', async () => {
+  it('discovers npm packages that declare the dsh-plugin keyword and a DSH role', async () => {
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = typeof input === 'string'
         ? input
         : input instanceof URL
           ? input.href
           : input.url
-      if (url.includes('api.github.com/search/repositories')) {
+      if (url.includes('/-/v1/search')) {
         return {
           ok: true,
           status: 200,
           statusText: 'OK',
           json: async () => ({
-            items: [{
-              full_name: 'anysearch-team/anysearch-dsh',
-              description: 'AnySearch web search provider',
-              html_url: 'https://github.com/anysearch-team/anysearch-dsh',
-              stargazers_count: 42,
-              owner: { login: 'anysearch-team' },
-              name: 'anysearch-dsh',
-              default_branch: 'main',
-            }],
+            objects: [
+              {
+                downloads: { monthly: 42 },
+                package: {
+                  name: '@anysearch/anysearch-dsh',
+                  description: 'AnySearch web search provider',
+                  keywords: ['dsh-plugin', 'web-search'],
+                  links: {
+                    repository: 'git+https://github.com/anysearch-team/anysearch-dsh.git',
+                    npm: 'https://www.npmjs.com/package/@anysearch/anysearch-dsh',
+                  },
+                },
+              },
+              {
+                downloads: { monthly: 7 },
+                package: {
+                  name: 'not-a-dsh-plugin',
+                  keywords: ['dsh-plugin'],
+                  links: { repository: 'git+https://github.com/example/not-a-dsh-plugin.git' },
+                },
+              },
+              {
+                downloads: { monthly: 99 },
+                package: {
+                  name: 'keyword-only',
+                  keywords: ['unrelated'],
+                },
+              },
+            ],
           }),
+        } as Response
+      }
+      if (url.includes('@anysearch/anysearch-dsh/latest')) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({ name: '@anysearch/anysearch-dsh', dsh: { client: { platform: 'web' } } }),
         } as Response
       }
       return {
         ok: true,
         status: 200,
         statusText: 'OK',
-        json: async () => ({ name: '@anysearch/anysearch-dsh' }),
+        json: async () => ({ name: 'not-a-dsh-plugin' }),
       } as Response
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -147,9 +175,12 @@ describe('PluginManagerGateway', () => {
           expect.objectContaining({
             packageName: '@anysearch/anysearch-dsh',
             repo: 'anysearch-team/anysearch-dsh',
-            stars: 42,
+            downloads: 42,
           }),
         ])
+        // The verified directory is cached for the lifetime of this deployment.
+        await manager.catalog()
+        expect(fetchMock).toHaveBeenCalledTimes(3)
       })
     } finally {
       vi.unstubAllGlobals()

@@ -4,14 +4,16 @@
 }
 
 .intro {
-  color: var(--dsh-text-secondary, #8a8f98);
+  color: var(--dsw-alias-label-tertiary);
   font-size: 13px;
+  line-height: 1.5;
   margin: 0;
 }
 
 .restart {
-  color: var(--dsh-text-warning, #c59a3a);
+  color: var(--dsw-alias-state-warn-label);
   font-size: 12px;
+  line-height: 1.5;
   margin: 0;
 }
 
@@ -31,38 +33,117 @@
 .input {
   min-width: 260px;
   padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--dsh-border, #30343c);
-  background: var(--dsh-input-bg, #1b1e24);
-  color: var(--dsh-text, #e6e6e6);
+  border-radius: 8px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-specific-input-major);
+  color: var(--dsw-alias-label-primary);
+  font: inherit;
   font-size: 13px;
+  transition: border-color .16s, background .16s;
+}
+
+.input::placeholder {
+  color: var(--dsw-alias-label-caption);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--dsw-alias-brand-primary-new-colorprimary-new-color);
 }
 
 .enableRow {
   display: inline-flex;
   gap: 6px;
   align-items: center;
+  color: var(--dsw-alias-label-secondary);
   font-size: 13px;
 }
 
-.installButton {
-  padding: 6px 12px;
-  border-radius: 6px;
+.primaryButton,
+.ghostButton,
+.inlineButton {
+  appearance: none;
   border: 1px solid transparent;
-  background: var(--dsh-accent, #4f7cff);
-  color: #fff;
+  border-radius: 8px;
+  padding: 5px 14px;
+  font: inherit;
   font-size: 13px;
+  line-height: 1.5;
   cursor: pointer;
+  transition: background .16s, border-color .16s, color .16s, opacity .16s;
+}
+
+.primaryButton {
+  background: var(--dsw-alias-button-info-fill);
+  color: #fff;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--dsw-alias-button-info-hover);
+}
+
+.ghostButton {
+  border-color: var(--dsw-alias-border-l2);
+  background: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.ghostButton:hover:not(:disabled) {
+  border-color: var(--dsw-alias-label-dimmed);
+  color: var(--dsw-alias-label-primary);
+}
+
+.dangerButton {
+  border-color: var(--dsw-alias-border-l2);
+  background: none;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.dangerButton:hover:not(:disabled) {
+  border-color: var(--dsw-alias-state-error-primary);
+  background: var(--dsw-alias-interactive-bg-hover-danger);
+}
+
+.inlineButton {
+  padding: 3px 9px;
+  border-color: var(--dsw-alias-border-l2);
+  background: none;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.inlineButton:hover {
+  border-color: var(--dsw-alias-label-dimmed);
+  color: var(--dsw-alias-label-primary);
+}
+
+.primaryButton:disabled,
+.ghostButton:disabled,
+.dangerButton:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.primaryButton:focus-visible,
+.ghostButton:focus-visible,
+.dangerButton:focus-visible,
+.inlineButton:focus-visible {
+  outline: 2px solid var(--dsw-alias-brand-primary-new-colorprimary-new-color);
+  outline-offset: 1px;
 }
 
 .searchRow {
   display: flex;
   gap: 6px;
   align-items: center;
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .error {
-  color: var(--dsh-text-danger, #e5484d);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--dsw-alias-state-error-primary);
   font-size: 13px;
 }
 
@@ -77,15 +158,22 @@
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--dsh-surface-l2, #202329);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-3);
+  transition: border-color .16s, background .16s;
+}
+
+.row:hover {
+  border-color: var(--dsw-alias-label-dimmed);
 }
 
 .rowHead {
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -93,16 +181,32 @@
 }
 
 .packageName {
+  overflow-wrap: anywhere;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--dsw-alias-markdown-inline-code);
+  color: var(--dsw-alias-label-primary);
   font-family: var(--dsh-mono, ui-monospace, monospace);
   font-size: 13px;
 }
 
 .meta {
-  color: var(--dsh-text-secondary, #8a8f98);
+  color: var(--dsw-alias-label-tertiary);
   font-size: 12px;
+}
+
+.meta[href] {
+  color: var(--dsw-alias-label-secondary);
+  text-decoration: none;
+}
+
+.meta[href]:hover {
+  color: var(--dsw-alias-label-primary);
+  text-decoration: underline;
 }
 
 .rowActions {
   display: flex;
+  flex-shrink: 0;
   gap: 8px;
 }

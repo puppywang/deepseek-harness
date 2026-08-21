@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-Host Remote service for profile plugin management. `PluginManagerGateway` registers the `pluginManager` service and publishes Typert-generated Remotes for `list`, `catalog`, `install`, `update`, `uninstall`, and `restart`. It composes the shared `@deepseek-ai/dsh-plugin-manager` library with the subprocess seam, so pnpm executes through the bundled `@pnpm/exe` binary without requiring a system pnpm — the path that makes plugin installation available inside the packaged desktop app. `catalog` discovers GitHub repositories tagged `dsh-plugin` and resolves each one's npm package name from its `package.json`.
+Host Remote service for profile plugin management. `PluginManagerGateway` registers the `pluginManager` service and publishes Typert-generated Remotes for `list`, `catalog`, `install`, `update`, `uninstall`, and `restart`. It composes the shared `@deepseek-ai/dsh-plugin-manager` library with the subprocess seam, so pnpm executes through the bundled `@pnpm/exe` binary without requiring a system pnpm — the path that makes plugin installation available inside the packaged desktop app. `catalog` searches npm for packages carrying the `dsh-plugin` keyword, then verifies each latest manifest declares a DSH bundle or client role.
 
 Every mutation writes the `$DSH_HOME/profiles/web` manifest and `cordis.patch.yml` synchronously with the CLI's semantics: a `dsh.bundle` dependency joins the profile layer list, and `enable: true` on install adds one idempotent Loader row for non-bundle packages. After each mutation the service re-applies the full composed profile patch stack to the live root Include, so installed/updated/removed plugins take effect without restarting dsh. If that live reload cannot complete, the mutation result reports `restartRequired: true`; the browser tab then asks the user to confirm before calling `pluginManager.restart`, because restarting interrupts conversations that are currently running. `pluginManager.restart` invokes the launcher-provided `ctx.appExit`, and the desktop shell restarts the harness child.
 
@@ -18,4 +18,4 @@ None; this package neither assembles nor sends model input.
 
 - **One profile** — the service manages the `web` profile (`resolveProfileDir('web')`); multi-profile management is not exposed.
 - **Live reload can fail for native modules** — the service re-applies the patch stack immediately; if an individual plugin fails to hot-load, its Loader error is reported and a process restart is the fallback.
-- **Catalog uses GitHub's public search and raw files** — unauthenticated rate limits apply, and repositories without a resolvable `package.json` are skipped.
+- **Catalog uses npm's public search and package manifests** — npm availability and rate limits apply; keyword-only packages without a DSH bundle/client manifest are skipped. Verified results are cached briefly.
