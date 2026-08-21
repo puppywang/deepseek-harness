@@ -40,7 +40,7 @@ describe('desktop package verification', () => {
   })
 
   it('declares the metadata required by Linux deb packaging', () => {
-    expect(desktopPackage.homepage).toBe('https://github.com/deepseek-ai/deepseek-harness')
+    expect(desktopPackage.homepage).toBe('https://github.com/puppywang/deepseek-harness')
     expect(desktopConfig.linux?.maintainer).toBe('DeepSeek')
   })
 

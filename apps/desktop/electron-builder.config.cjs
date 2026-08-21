@@ -67,7 +67,7 @@ module.exports = {
   },
   publish: {
     provider: 'github',
-    owner: 'deepseek-ai',
+    owner: 'puppywang',
     repo: 'deepseek-harness',
     tagNamePrefix: 'dsh-v',
   },
