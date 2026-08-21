@@ -29,8 +29,8 @@ export type * from './types.ts'
 
 const PNPM_GRACE_MS = 15 * 60_000
 const PNPM_COLLECT_BYTES = 64 * 1024
-const CATALOG_TTL_MS = 10 * 60_000
-const CATALOG_SIZE = 100
+const CATALOG_TTL_MS = 30 * 60_000
+const CATALOG_SIZE = 250
 const CATALOG_FETCH_CONCURRENCY = 8
 
 /** One abbreviated npm search result used before the package manifest is verified. */
@@ -74,6 +74,11 @@ function installAnchor(): string {
   const entry = process.argv[1]
   if (entry !== undefined && entry !== '') return join(dirname(entry), 'package.json')
   throw new Error('pluginManager: cannot resolve the dsh installation anchor; set DSH_INSTALL_ANCHOR')
+}
+
+/** Wait for one retry backoff step without holding a subprocess slot. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolvePromise) => { setTimeout(resolvePromise, ms) })
 }
 
 /** Build an npm registry URL without turning a scope separator into a path segment. */
@@ -137,16 +142,22 @@ export class PluginManagerGateway extends TypertRemoteService {
     return { profileDir: resolveProfileDir('web'), installAnchor: installAnchor() }
   }
 
-  /** Fetch one JSON URL with a short timeout and a browser-style User-Agent. */
+  /** Fetch one JSON URL with a short timeout, browser-style headers, and bounded retries. */
   private async fetchJson(url: string): Promise<unknown> {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'deepseek-harness', Accept: 'application/vnd.github+json' },
-      signal: AbortSignal.timeout(10_000),
-    })
-    if (!response.ok) {
-      throw new Error(`pluginManager.catalog: ${response.status} ${response.statusText} for ${url}`)
+    for (let attempt = 0; ; attempt += 1) {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'deepseek-harness', Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (response.ok) return await response.json()
+      // The public registry occasionally answers a burst with a transient
+      // content-negotiation or capacity status; retry those before dropping a
+      // plugin from the directory.
+      if (![406, 429, 500, 502, 503, 504].includes(response.status) || attempt >= 2) {
+        throw new Error(`pluginManager.catalog: ${response.status} ${response.statusText} for ${url}`)
+      }
+      await sleep((attempt + 1) * 250)
     }
-    return await response.json()
   }
 
   /** Reapply the web profile's full patch stack to the live root Include.
