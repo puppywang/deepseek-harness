@@ -42,6 +42,17 @@ type EditorLayout = 'deepseek' | 'pi-ai' | 'unknown'
 /** The public DeepSeek endpoint shown as the deepseek base-URL placeholder. */
 const DEEPSEEK_PUBLIC_BASE_URL = 'https://api.deepseek.com'
 
+/** Default retries after the first request, shared with the LLM retry policy. */
+const DEFAULT_RETRY_ATTEMPTS = 5
+
+/** A practical UI ceiling; settings.yaml still owns the schema-level limit. */
+const MAX_RETRY_ATTEMPTS = 50
+
+/** Whether one numeric input is a retry count the adapters accept. */
+function validRetryAttempts(value: number): value is number {
+  return Number.isSafeInteger(value) && value >= 0 && value <= MAX_RETRY_ATTEMPTS
+}
+
 /** Props of {@link ProviderEditor}. */
 export interface ProviderEditorProps {
   /** Provider route id. */
@@ -147,6 +158,65 @@ function refFor(
   return typeof named === 'string' && named.length > 0 ? named : deriveKeyRef(provider)
 }
 
+/** A stored retry policy as a plain editable object, when present. */
+function retryPolicyOf(source: unknown): Record<string, unknown> | undefined {
+  const policy = schemaPathValue(source, ['retryPolicy'])
+  return typeof policy === 'object' && policy !== null && !Array.isArray(policy)
+    ? { ...policy } as Record<string, unknown>
+    : undefined
+}
+
+/** Read one nested plain-data value without exposing schema internals. */
+function schemaPathValue(source: unknown, path: readonly string[]): unknown {
+  let current = source
+  for (const key of path) {
+    if (typeof current !== 'object' || current === null || Array.isArray(current)) return undefined
+    current = (current as Record<string, unknown>)[key]
+  }
+  return current
+}
+
+/** The explicit or effective normal/always retry mode. */
+function retryModeOf(...sources: readonly unknown[]): 'normal' | 'always' | undefined {
+  for (const source of sources) {
+    const mode = schemaPathValue(retryPolicyOf(source), ['mode'])
+    if (mode === 'normal' || mode === 'always') return mode
+  }
+  return undefined
+}
+
+/** The configured retry count after the first request, when it is a safe integer. */
+function retryAttemptsOf(source: unknown): number | undefined {
+  const value = schemaPathValue(retryPolicyOf(source), ['maxRetries'])
+  return typeof value === 'number' && Number.isSafeInteger(value) ? value : undefined
+}
+
+/** Remove only the UI-owned retry count, preserving mode/backoff/retryable codes. */
+function withoutRetryAttempts(
+  schema: SettingsSchemaOperations,
+  draft: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!schema.hasPath(draft, ['retryPolicy', 'maxRetries'])) return draft
+  const next = schema.deletePath(draft, ['retryPolicy', 'maxRetries'])
+  return Object.keys(retryPolicyOf(schema.getPath(next, ['retryPolicy'])) ?? {}).length === 0
+    ? schema.deletePath(next, ['retryPolicy'])
+    : next
+}
+
+/** Store a normal-mode count while retaining any other policy fields already present. */
+function withRetryAttempts(
+  schema: SettingsSchemaOperations,
+  draft: Record<string, unknown>,
+  maxRetries: number,
+): Record<string, unknown> {
+  const previous = retryPolicyOf(draft)
+  return schema.setPath(draft, ['retryPolicy'], {
+    ...(previous ?? {}),
+    mode: 'normal',
+    maxRetries,
+  })
+}
+
 /**
  * Render one provider's editing card.
  * @param props - the addressed profile plus wire faces and copy.
@@ -155,6 +225,10 @@ function refFor(
 export function ProviderEditor(props: ProviderEditorProps): ReactNode {
   const { namespace, schema, settingsPath, api, t } = props
   const [draft, setDraft] = useState<Record<string, unknown>>(() => draftAt(schema, namespace, settingsPath))
+  const [retryAttemptsDraft, setRetryAttemptsDraft] = useState<string>(() => {
+    const attempts = retryAttemptsOf(draftAt(schema, namespace, settingsPath))
+    return attempts === undefined ? '' : String(attempts)
+  })
   const [keyDraft, setKeyDraft] = useState('')
   const [keyState, setKeyState] = useState<CredentialView | undefined>(undefined)
   const [busy, setBusy] = useState(false)
@@ -216,11 +290,31 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       ? schema.deletePath(current, [key])
       : schema.setPath(current, [key], value))
   }
+  const setRetryAttempts = (next: string): void => {
+    setRetryAttemptsDraft(next)
+    const parsed = Number(next)
+    if (next.trim() === '') {
+      setDraft(current => withoutRetryAttempts(schema, current))
+      return
+    }
+    // Invalid text stays in the input and blocks submit; the draft keeps its
+    // last valid policy rather than carrying a number-like string to settings.
+    if (!validRetryAttempts(parsed)) return
+    setDraft(current => withRetryAttempts(schema, current, parsed))
+  }
 
   // The model list is validated by the same per-row checker for both families,
   // so a bad row is named by its position rather than by a blanket message.
   const modelFailure = validateDeepSeekModels(schema.getPath(draft, ['models']))
   const keyFailure = apiKeyFailure(keyDraft)
+  // Always-retry intentionally has no count. Keep the field out of the way
+  // rather than letting an attempts edit silently switch the provider mode.
+  const retryMode = retryModeOf(draft, namespace.base, fallback)
+  const retryAlways = retryMode === 'always'
+  const retryFailure = retryAttemptsDraft.trim() !== ''
+      && !validRetryAttempts(Number(retryAttemptsDraft))
+    ? 'retryAttemptsInvalid' as const
+    : undefined
   // What a probe or a write must carry: the typed key with paste whitespace
   // removed. A blank field yields an empty string, which both call sites read
   // as "no key supplied" rather than as a key — that is how a card whose
@@ -263,11 +357,13 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
       // with a bad row; it stays because the schema check below would refuse
       // the write with a message naming a path instead of the row, and because
       // nothing but this function decides what is written.
-      const failure = validateDeepSeekModels(schema.getPath(next, ['models']))
+      const modelCheck = validateDeepSeekModels(schema.getPath(next, ['models']))
       /* v8 ignore next 3 -- unreachable from the card: the same failure disables submit */
-      if (failure !== undefined) {
-        return `${t('model')} ${String(failure.index + 1)}: ${t(failure.key)}`
+      if (modelCheck !== undefined) {
+        return `${t('model')} ${String(modelCheck.index + 1)}: ${t(modelCheck.key)}`
       }
+      /* v8 ignore next 3 -- unreachable from the card: the same failure disables submit */
+      if (retryFailure !== undefined) return t(retryFailure)
     }
     /* v8 ignore next -- apply is only reachable from the rendered card, which required a resolved node */
     if (props.credentialOnly !== true && node !== undefined && settingsPath.length === 0) {
@@ -438,6 +534,33 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
                 }}
               />
             </div>
+            {/* Retry count is a provider-route policy: it applies to every model
+                on this route. Always mode deliberately has no count to edit. */}
+            {retryAlways
+              ? <p className={styles['advancedHint']}>{t('retryAlways')}</p>
+              : (
+                <div className={styles['field']}>
+                  <span className={styles['fieldLabel']}>{t('retryAttempts')}</span>
+                  <input
+                    className={styles['input']}
+                    type="number"
+                    min={0}
+                    max={MAX_RETRY_ATTEMPTS}
+                    step={1}
+                    value={retryAttemptsDraft}
+                    placeholder={String(
+                      retryAttemptsOf(namespace.base)
+                        ?? retryAttemptsOf(fallback)
+                        ?? DEFAULT_RETRY_ATTEMPTS,
+                    )}
+                    aria-label={t('retryAttempts')}
+                    aria-invalid={retryFailure !== undefined}
+                    disabled={disabled}
+                    onChange={(event) => { setRetryAttempts(event.target.value) }}
+                  />
+                  {retryFailure === undefined ? null : <p className={styles['error']}>{t(retryFailure)}</p>}
+                </div>
+              )}
             {/* The protocol sits beside the endpoint it describes, as it does
                 on the create card. */}
             {ownsIdentity
@@ -516,7 +639,7 @@ export function ProviderEditor(props: ProviderEditorProps): ReactNode {
         t={t}
         busy={busy}
         submitDisabled={disabled || layout === 'unknown'
-          || (props.credentialOnly !== true && modelFailure !== undefined)
+          || (props.credentialOnly !== true && (modelFailure !== undefined || retryFailure !== undefined))
           || shownKeyFailure !== undefined
           || (props.credentialRequired === true && keyValue.length === 0)}
         submitLabel={props.submitLabel ?? 'apply'}

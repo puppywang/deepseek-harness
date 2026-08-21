@@ -40,6 +40,16 @@ const PiAiConfig = Schema.object({
       ]),
     })),
     reasoning: Schema.union(['off', 'high']),
+    retryPolicy: Schema.object({
+      mode: Schema.union(['normal', 'always']),
+      maxRetries: Schema.number(),
+      retryableCodes: Schema.array(Schema.string()),
+      backoff: Schema.object({
+        initialDelayMs: Schema.number(),
+        maxDelayMs: Schema.number(),
+        jitterRatio: Schema.number(),
+      }),
+    }),
   })),
 })
 
@@ -854,7 +864,7 @@ describe('hand-declared providers', () => {
     await mountSection({ providers: { openai: { apiKeyEnv: 'OPENAI_API_KEY' } } })
     openEditor('openai')
     fireEvent.click(screen.getByText(en.customized))
-    expect(fields()).toEqual([en.keyInput, en.baseUrl])
+    expect(fields()).toEqual([en.keyInput, en.baseUrl, en.retryAttempts])
     cleanup()
 
     // A hand-declared route named its own protocol at creation, so editing it
@@ -864,7 +874,7 @@ describe('hand-declared providers', () => {
       declaredRoutes: ['acme-gateway'],
     })
     openEditor('acme-gateway')
-    expect(fields()).toEqual([en.keyInput, en.customDisplayName, en.baseUrl, en.customApi])
+    expect(fields()).toEqual([en.keyInput, en.customDisplayName, en.baseUrl, en.retryAttempts, en.customApi])
   })
 
   it('renames a declared route and falls back to its id when the name is cleared', async () => {
@@ -905,6 +915,63 @@ describe('hand-declared providers', () => {
     const name = screen.getByLabelText<HTMLInputElement>(en.customDisplayName)
     expect(name.value).toBe('')
     expect(name.placeholder).toBe('Acme (pinned)')
+  })
+
+  it('stores, preserves, and clears a bounded model retry count', async () => {
+    // The count is one field inside the adapter's route-level retryPolicy;
+    // editing it must not discard backoff or turn an always-mode route into
+    // a bounded normal route.
+    const { mutate } = await mountSection({
+      providers: {
+        openai: {
+          apiKeyEnv: 'OPENAI_API_KEY',
+          retryPolicy: { mode: 'normal', maxRetries: 2, backoff: { initialDelayMs: 250 } },
+        },
+      },
+    })
+    openEditor('openai')
+    const attempts = screen.getByLabelText<HTMLInputElement>(en.retryAttempts)
+    expect(attempts.value).toBe('2')
+
+    fireEvent.change(attempts, { target: { value: '8' } })
+    fireEvent.click(screen.getByText(en.apply))
+    await waitFor(() => { expect(mutate).toHaveBeenCalledTimes(1) })
+    expect(firstMutate(mutate).ops).toEqual([{
+      op: 'set',
+      path: ['providers', 'openai', 'retryPolicy'],
+      value: { mode: 'normal', maxRetries: 8, backoff: { initialDelayMs: 250 } },
+    }])
+    cleanup()
+
+    // Clearing the sole override restores the schema default instead of
+    // leaving a meaningless `{ retryPolicy: {} }` behind.
+    const clearing = await mountSection({
+      providers: {
+        openai: {
+          apiKeyEnv: 'OPENAI_API_KEY',
+          retryPolicy: { mode: 'normal', maxRetries: 8 },
+        },
+      },
+    })
+    openEditor('openai')
+    fireEvent.change(screen.getByLabelText(en.retryAttempts), { target: { value: '' } })
+    fireEvent.click(screen.getByText(en.apply))
+    await waitFor(() => { expect(clearing.mutate).toHaveBeenCalledTimes(1) })
+    expect(firstMutate(clearing.mutate).ops).toEqual([{
+      op: 'unset',
+      path: ['providers', 'openai', 'retryPolicy'],
+    }])
+    cleanup()
+
+    // Invalid text never reaches settings and disables Apply until corrected.
+    const invalid = await mountSection({ providers: { openai: { apiKeyEnv: 'OPENAI_API_KEY' } } })
+    openEditor('openai')
+    const invalidAttempts = screen.getByLabelText<HTMLInputElement>(en.retryAttempts)
+    expect(invalidAttempts.placeholder).toBe('5')
+    fireEvent.change(invalidAttempts, { target: { value: '51' } })
+    expect(screen.getByText(en.retryAttemptsInvalid)).toBeTruthy()
+    expect(screen.getByRole('button', { name: en.apply })).toHaveProperty('disabled', true)
+    expect(invalid.mutate).not.toHaveBeenCalled()
   })
 
   it('names the provider as the refreshed directory reports it after a rename', async () => {
