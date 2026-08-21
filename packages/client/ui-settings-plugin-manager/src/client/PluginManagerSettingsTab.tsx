@@ -1,10 +1,11 @@
 /** Plugin installation and management tab for the Plugins settings section. */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type {
   InstalledPluginView,
   PluginManagerCatalog,
   PluginManagerCatalogEntry,
+  PluginManagerCatalogRequest,
   PluginManagerMutation,
   PluginManagerRestartResult,
   PluginManagerSnapshot,
@@ -20,8 +21,8 @@ import css from './PluginManagerSettingsTab.module.css'
 export interface PluginManagerSettingsTabInjected {
   /** Read the installed plugin snapshot. */
   list: () => Promise<PluginManagerSnapshot>
-  /** Read the npm `dsh-plugin` catalog. */
-  catalog: () => Promise<PluginManagerCatalog>
+  /** Search the npm `dsh-plugin` catalog on the Host. */
+  catalog: (request?: PluginManagerCatalogRequest) => Promise<PluginManagerCatalog>
   /** Install one package; `enable` adds its Loader row. */
   install: (request: { spec: string; enable: boolean }) => Promise<PluginManagerMutation>
   /** Update one installed package. */
@@ -49,18 +50,16 @@ function matches(plugin: InstalledPluginView, normalizedQuery: string): boolean 
   return plugin.packageName.toLocaleLowerCase().includes(normalizedQuery)
 }
 
-/** Whether one catalog row matches the local search query. */
-function matchesEntry(entry: PluginManagerCatalogEntry, normalizedQuery: string): boolean {
-  if (normalizedQuery.length === 0) return true
-  return `${entry.packageName} ${entry.description ?? ''} ${entry.repo}`
-    .toLocaleLowerCase()
-    .includes(normalizedQuery)
-}
-
 type CatalogState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly entries: readonly PluginManagerCatalogEntry[] }
+  | {
+    readonly status: 'ready'
+    readonly query: string
+    readonly entries: readonly PluginManagerCatalogEntry[]
+    /** True while a new server-side query keeps the prior results visible. */
+    readonly refreshing: boolean
+  }
 
 /** Render the installed-plugin manager. */
 export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): ReactNode {
@@ -69,7 +68,9 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
   const [query, setQuery] = useState('')
   const [state, setState] = useState<ViewState>({ status: 'loading' })
   const [catalogState, setCatalogState] = useState<CatalogState>({ status: 'loading' })
+  const [catalogInput, setCatalogInput] = useState('')
   const [catalogQuery, setCatalogQuery] = useState('')
+  const catalogRequestRef = useRef(0)
   const [spec, setSpec] = useState('')
   const [enableRow, setEnableRow] = useState(true)
   const [busyPackage, setBusyPackage] = useState<string>()
@@ -88,29 +89,42 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
     return () => { current = false }
   }, [list, request])
 
-  useEffect(() => {
-    let current = true
-    void Promise.resolve().then(() => catalog()).then(
-      (result) => { if (current) setCatalogState({ status: 'ready', entries: result.entries }) },
-      () => { if (current) setCatalogState({ status: 'error' }) },
+  const loadCatalog = useCallback((query: string): void => {
+    const requestId = ++catalogRequestRef.current
+    setCatalogState(current => current.status === 'ready'
+      ? { ...current, refreshing: true }
+      : { status: 'loading' })
+    void Promise.resolve().then(() => catalog({ query })).then(
+      (result) => {
+        if (catalogRequestRef.current !== requestId || result.query !== query) return
+        setCatalogState({ status: 'ready', query, entries: result.entries, refreshing: false })
+      },
+      () => {
+        if (catalogRequestRef.current !== requestId) return
+        setCatalogState({ status: 'error' })
+      },
     )
-    return () => { current = false }
   }, [catalog])
 
+  // npm owns relevance ranking for non-empty queries; debounce so typing does
+  // not turn every keystroke into a registry crawl.
+  useEffect(() => {
+    const timer = setTimeout(() => { setCatalogQuery(catalogInput.trim()) }, 300)
+    return () => { clearTimeout(timer) }
+  }, [catalogInput])
+
+  useEffect(() => {
+    loadCatalog(catalogQuery)
+  }, [catalogQuery, loadCatalog])
+
   const normalizedQuery = query.trim().toLocaleLowerCase()
-  const normalizedCatalogQuery = catalogQuery.trim().toLocaleLowerCase()
   const plugins = useMemo(
     () => state.status === 'ready'
       ? state.snapshot.plugins.filter(plugin => matches(plugin, normalizedQuery))
       : [],
     [normalizedQuery, state],
   )
-  const catalogEntries = useMemo(
-    () => catalogState.status === 'ready'
-      ? catalogState.entries.filter(entry => matchesEntry(entry, normalizedCatalogQuery))
-      : [],
-    [catalogState, normalizedCatalogQuery],
-  )
+  const catalogEntries = catalogState.status === 'ready' ? catalogState.entries : []
   const installedNames = useMemo(
     () => new Set(state.status === 'ready' ? state.snapshot.plugins.map(plugin => plugin.packageName) : []),
     [state],
@@ -162,13 +176,15 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
         <input
           className={css.input}
           type="search"
-          value={catalogQuery}
+          value={catalogInput}
           placeholder={t('discoverSearch')}
           aria-label={t('discoverSearch')}
-          onChange={(event) => { setCatalogQuery(event.target.value) }}
+          onChange={(event) => { setCatalogInput(event.target.value) }}
         />
       </div>
-      {catalogState.status === 'loading' ? <p className={css.intro}>{t('discoverLoading')}</p> : null}
+      {(catalogState.status === 'loading' || (catalogState.status === 'ready' && catalogState.refreshing))
+        ? <p className={css.intro}>{t('discoverLoading')}</p>
+        : null}
       {catalogState.status === 'error'
         ? (
           <p className={css.error}>
@@ -176,17 +192,14 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
             <button
               className={css.inlineButton}
               type="button"
-              onClick={() => { setCatalogState({ status: 'loading' }); void Promise.resolve().then(() => catalog()).then(
-                (result) => { setCatalogState({ status: 'ready', entries: result.entries }) },
-                () => { setCatalogState({ status: 'error' }) },
-              ) }}
+              onClick={() => { loadCatalog(catalogQuery) }}
             >
               {t('retry')}
             </button>
           </p>
         )
         : null}
-      {catalogState.status === 'ready' && catalogEntries.length === 0
+      {catalogState.status === 'ready' && !catalogState.refreshing && catalogEntries.length === 0
         ? <p className={css.intro}>{t('discoverEmpty')}</p>
         : null}
       {catalogState.status === 'ready' && catalogEntries.length > 0

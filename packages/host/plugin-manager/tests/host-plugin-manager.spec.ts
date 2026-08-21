@@ -171,15 +171,85 @@ describe('PluginManagerGateway', () => {
       await withPluginEnv(profileFixture(), async () => {
         const { manager } = await harness()
         const catalog = await manager.catalog()
-        expect(catalog.entries).toEqual([
-          expect.objectContaining({
-            packageName: '@anysearch/anysearch-dsh',
-            repo: 'anysearch-team/anysearch-dsh',
-            downloads: 42,
-          }),
-        ])
+        expect(catalog).toEqual({ query: '', entries: [expect.objectContaining({
+          packageName: '@anysearch/anysearch-dsh',
+          repo: 'anysearch-team/anysearch-dsh',
+          downloads: 42,
+        }),
+        ] })
         // The verified directory is cached for the lifetime of this deployment.
         await manager.catalog()
+        expect(fetchMock).toHaveBeenCalledTimes(3)
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('searches npm server-side and ranks verified matches by npm relevance', async () => {
+    const searchUrls: string[] = []
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url
+      if (url.includes('/-/v1/search')) {
+        searchUrls.push(url)
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            objects: [
+              {
+                searchScore: 12.5,
+                downloads: { monthly: 10 },
+                package: {
+                  name: 'memory-dsh',
+                  keywords: ['dsh-plugin', 'memory'],
+                  links: { repository: 'git+https://github.com/example/memory-dsh.git' },
+                },
+              },
+              {
+                searchScore: 3.5,
+                downloads: { monthly: 900 },
+                package: {
+                  name: 'popular-memory-dsh',
+                  keywords: ['dsh-plugin', 'memory'],
+                  links: { repository: 'git+https://github.com/example/popular-memory-dsh.git' },
+                },
+              },
+            ],
+          }),
+        } as Response
+      }
+      if (url.includes('/latest')) {
+        const packageName = url.includes('popular-memory-dsh') ? 'popular-memory-dsh' : 'memory-dsh'
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({ name: packageName, dsh: { bundle: { patch: './cordis.patch.yml' } } }),
+        } as Response
+      }
+      throw new Error(`unexpected catalog URL ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      await withPluginEnv(profileFixture(), async () => {
+        const { manager } = await harness()
+        const catalog = await manager.catalog({ query: '  Memory ' })
+        const firstSearchUrl = searchUrls[0]
+        if (firstSearchUrl === undefined) throw new Error('npm search was not called')
+        expect(decodeURIComponent(firstSearchUrl)).toContain('text=keywords:dsh-plugin memory')
+        expect(catalog.query).toBe('memory')
+        expect(catalog.entries.map(entry => entry.packageName)).toEqual([
+          'memory-dsh',
+          'popular-memory-dsh',
+        ])
+        // A distinct query has a distinct cache entry.
+        await manager.catalog({ query: 'memory' })
         expect(fetchMock).toHaveBeenCalledTimes(3)
       })
     } finally {

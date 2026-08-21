@@ -17,6 +17,7 @@ export type {
   InstalledPluginView,
   PluginManagerCatalog,
   PluginManagerCatalogEntry,
+  PluginManagerCatalogRequest,
   PluginManagerInstallRequest,
   PluginManagerMutation,
   PluginManagerPackageRequest,

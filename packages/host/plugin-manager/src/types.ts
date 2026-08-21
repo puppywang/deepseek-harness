@@ -45,6 +45,12 @@ export interface PluginManagerRestartResult {
   restarted: true
 }
 
+/** pluginManager.catalog request; an empty query returns the popular directory. */
+export interface PluginManagerCatalogRequest {
+  /** Free-text query passed to npm after the required `dsh-plugin` keyword filter. */
+  query?: string
+}
+
 /** One installable npm package discovered from the `dsh-plugin` keyword directory. */
 export interface PluginManagerCatalogEntry {
   /** npm package name verified to declare a DSH bundle or client role. */
@@ -65,5 +71,7 @@ export interface PluginManagerCatalogEntry {
 
 /** pluginManager.catalog response. */
 export interface PluginManagerCatalog {
+  /** Normalized query actually answered, so clients can discard stale responses. */
+  query: string
   entries: readonly PluginManagerCatalogEntry[]
 }

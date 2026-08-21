@@ -18,6 +18,7 @@ import type {
   InstalledPluginView,
   PluginManagerCatalog,
   PluginManagerCatalogEntry,
+  PluginManagerCatalogRequest,
   PluginManagerInstallRequest,
   PluginManagerMutation,
   PluginManagerPackageRequest,
@@ -32,6 +33,7 @@ const PNPM_COLLECT_BYTES = 64 * 1024
 const CATALOG_TTL_MS = 30 * 60_000
 const CATALOG_SIZE = 250
 const CATALOG_FETCH_CONCURRENCY = 8
+const CATALOG_CACHE_LIMIT = 32
 
 /** One abbreviated npm search result used before the package manifest is verified. */
 interface NpmSearchPackage {
@@ -49,6 +51,7 @@ interface NpmSearchPackage {
 /** One npm search result with its monthly download estimate. */
 interface NpmSearchResult {
   downloads?: { monthly?: unknown }
+  searchScore?: unknown
   package?: NpmSearchPackage
 }
 
@@ -61,10 +64,21 @@ interface DshPackageManifest {
   }
 }
 
-/** A cached catalog response, so reopening Settings does not re-walk npm. */
+/** A cached catalog response, so repeated searches do not re-walk npm. */
 interface CatalogCache {
   at: number
   entries: PluginManagerCatalogEntry[]
+}
+
+/** One npm candidate retained before its latest manifest proves the DSH role. */
+interface NpmPluginCandidate {
+  packageName: string
+  description: string | null
+  repository: string | null
+  homepage: string | null
+  npmUrl: string | null
+  downloads: number
+  searchScore: number
 }
 
 /** Absolute `package.json` of the running dsh installation, or an explicit test override. */
@@ -79,6 +93,12 @@ function installAnchor(): string {
 /** Wait for one retry backoff step without holding a subprocess slot. */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolvePromise) => { setTimeout(resolvePromise, ms) })
+}
+
+/** Normalize a user search into a stable cache key and npm-safe text query. */
+function normalizeCatalogQuery(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  return value.replace(/\s+/gu, ' ').trim().slice(0, 128).toLocaleLowerCase()
 }
 
 /** Build an npm registry URL without turning a scope separator into a path segment. */
@@ -132,7 +152,8 @@ async function mapWithLimit<T, R>(
 export class PluginManagerGateway extends TypertRemoteService {
   static inject = ['subprocess']
 
-  private catalogCache: CatalogCache | undefined
+  private catalogCaches = new Map<string, CatalogCache>()
+  private catalogInflight = new Map<string, Promise<PluginManagerCatalog>>()
 
   constructor(ctx: Context) {
     super(ctx, 'pluginManager')
@@ -208,24 +229,56 @@ export class PluginManagerGateway extends TypertRemoteService {
   }
 
   /**
-   * List npm packages carrying the `dsh-plugin` keyword and keep only manifests
-   * that declare a DSH bundle or client role. Results are ranked by downloads.
-   * @returns the discoverable plugin catalog.
+   * Search npm packages carrying the `dsh-plugin` keyword and keep only manifests
+   * that declare a DSH bundle or client role. An empty query returns the popular
+   * directory; a non-empty query is answered by npm's server-side text ranking.
+   * @param request - optional free-text search requested by the client.
+   * @returns the discoverable plugin catalog for the normalized query.
    */
   @Remote('catalog')
-  async catalog(): Promise<PluginManagerCatalog> {
+  async catalog(request?: PluginManagerCatalogRequest): Promise<PluginManagerCatalog> {
+    const query = normalizeCatalogQuery(request?.query)
     const now = Date.now()
-    if (this.catalogCache !== undefined && now - this.catalogCache.at < CATALOG_TTL_MS) {
-      return { entries: this.catalogCache.entries }
+    const cache = this.catalogCaches.get(query)
+    if (cache !== undefined && now - cache.at < CATALOG_TTL_MS) {
+      // Refresh insertion order so the bounded cache keeps hot queries first.
+      this.catalogCaches.delete(query)
+      this.catalogCaches.set(query, cache)
+      return { query, entries: cache.entries }
     }
 
+    const pending = this.catalogInflight.get(query)
+    if (pending !== undefined) return pending
+
+    const searched = this.searchCatalog(query).then(entries => ({ query, entries }))
+    this.catalogInflight.set(query, searched)
+    try {
+      const result = await searched
+      this.catalogCaches.set(query, { at: now, entries: result.entries })
+      while (this.catalogCaches.size > CATALOG_CACHE_LIMIT) {
+        const oldest = this.catalogCaches.keys().next()
+        if (oldest.done === true) break
+        this.catalogCaches.delete(oldest.value)
+      }
+      return result
+    } finally {
+      this.catalogInflight.delete(query)
+    }
+  }
+
+  /** Query npm once, verify each candidate manifest, and rank the verified result. */
+  private async searchCatalog(query: string): Promise<PluginManagerCatalogEntry[]> {
+    const searchText = ['keywords:dsh-plugin', query].filter(part => part !== '').join(' ')
     const search = await this.fetchJson(
-      `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent('keywords:dsh-plugin')}&size=${CATALOG_SIZE}`,
+      `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(searchText)}&size=${CATALOG_SIZE}`,
     ) as { objects?: readonly NpmSearchResult[] }
-    const candidates = (search.objects ?? []).flatMap((result) => {
+    const candidates = (search.objects ?? []).flatMap((result): NpmPluginCandidate[] => {
       const pkg = result.package
       const packageName = typeof pkg?.name === 'string' ? pkg.name : ''
       const keywords = Array.isArray(pkg?.keywords) ? pkg.keywords : []
+      const searchScore = typeof result.searchScore === 'number' && Number.isFinite(result.searchScore)
+        ? result.searchScore
+        : 0
       if (packageName === '' || !keywords.includes('dsh-plugin')) return []
       if (packageName.startsWith('@deepseek-ai/')) return []
       return [{
@@ -235,6 +288,7 @@ export class PluginManagerGateway extends TypertRemoteService {
         homepage: typeof pkg?.links?.homepage === 'string' ? pkg.links.homepage : null,
         npmUrl: typeof pkg?.links?.npm === 'string' ? pkg.links.npm : null,
         downloads: typeof result.downloads?.monthly === 'number' ? result.downloads.monthly : 0,
+        searchScore,
       }]
     })
 
@@ -267,11 +321,15 @@ export class PluginManagerGateway extends TypertRemoteService {
         ...identity,
       }]
     })
-    entries.sort((left, right) =>
-      right.downloads - left.downloads
-      || left.packageName.localeCompare(right.packageName))
-    this.catalogCache = { at: now, entries }
-    return { entries }
+    const searchScores = new Map(candidates.map(candidate => [candidate.packageName, candidate.searchScore]))
+    entries.sort((left, right) => {
+      if (query === '') return right.downloads - left.downloads
+        || left.packageName.localeCompare(right.packageName)
+      return (searchScores.get(right.packageName) ?? 0) - (searchScores.get(left.packageName) ?? 0)
+        || right.downloads - left.downloads
+        || left.packageName.localeCompare(right.packageName)
+    })
+    return entries
   }
 
   /**
