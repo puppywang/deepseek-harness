@@ -79,7 +79,7 @@ function main(): void {
   if (values.family === undefined) throw new Error('usage: verify.ts --family <dsh|vendor>')
 
   const family = releaseFamily(values.family)
-const allMembers = family.members(process.cwd())
+  const allMembers = family.members(process.cwd())
   family.verifyVersions(allMembers)
   const members = family.publishMembers(allMembers)
   // Resolve the publish order here, before the build: an install-edge cycle
@@ -101,7 +101,7 @@ const allMembers = family.members(process.cwd())
 
   const versions = [...new Set(allMembers.map(member => member.version))]
   const summary = versions.length === 1 ? versions[0] : `${String(versions.length)} versions`
-const publishSummary = members.length === allMembers.length ? '' : `, ${String(members.length)} publishable`
+  const publishSummary = members.length === allMembers.length ? '' : `, ${String(members.length)} publishable`
   console.log(
     `release verify: family ${family.id}, ${String(allMembers.length)} member(s)${publishSummary}, ${summary},`
     + ` publish order resolved, ${String(plan.droppedPeerEdges.length)} peer declaration(s) unordered`
