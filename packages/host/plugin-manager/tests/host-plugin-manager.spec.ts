@@ -258,9 +258,81 @@ describe('PluginManagerGateway', () => {
           'memory-dsh',
           'popular-memory-dsh',
         ])
-        // A distinct query has a distinct cache entry.
+        // The same normalized query is cached, including its exact-name probe.
         await manager.catalog({ query: 'memory' })
-        expect(fetchMock).toHaveBeenCalledTimes(3)
+        // The exact-name probe adds one registry call before candidate verification.
+        expect(fetchMock).toHaveBeenCalledTimes(4)
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('finds an exact zero-download package that npm relevance buries', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url
+      if (url.includes('/-/v1/search')) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            objects: [{
+              searchScore: 99,
+              downloads: { monthly: 1000 },
+              package: {
+                name: 'popular-other-dsh',
+                keywords: ['dsh-plugin', 'notification'],
+                links: { repository: 'git+https://github.com/example/popular-other-dsh.git' },
+              },
+            }],
+          }),
+        } as Response
+      }
+      if (url === 'https://registry.npmjs.org/dsh-notification/latest') {
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            name: 'dsh-notification',
+            description: 'Desktop and webhook notifications',
+            keywords: ['dsh-plugin'],
+            repository: { type: 'git', url: 'git+https://github.com/nishit130/dsh-notification.git' },
+            dsh: {
+              bundle: { patch: './cordis.patch.yml' },
+              client: {},
+            },
+          }),
+        } as Response
+      }
+      if (url.endsWith('popular-other-dsh/latest')) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({ name: 'popular-other-dsh', dsh: { bundle: {} } }),
+        } as Response
+      }
+      throw new Error(`unexpected catalog URL ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      await withPluginEnv(profileFixture(), async () => {
+        const { manager } = await harness()
+        const catalog = await manager.catalog({ query: 'dsh-notification' })
+        expect(catalog.entries.map(entry => entry.packageName)).toEqual([
+          'dsh-notification',
+          'popular-other-dsh',
+        ])
+        expect(catalog.entries[0]).toEqual(expect.objectContaining({
+          repo: 'nishit130/dsh-notification',
+          downloads: 0,
+        }))
       })
     } finally {
       vi.unstubAllGlobals()

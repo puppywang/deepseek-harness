@@ -58,9 +58,13 @@ interface NpmSearchResult {
   package?: NpmSearchPackage
 }
 
-/** The manifest slice that identifies a package as an installable DSH plugin. */
+/** The latest manifest slice used to identify and describe an exact package. */
 interface DshPackageManifest {
   name?: unknown
+  description?: unknown
+  keywords?: unknown
+  homepage?: unknown
+  repository?: unknown
   dsh?: {
     bundle?: unknown
     client?: unknown
@@ -132,10 +136,30 @@ function npmUrl(packageName: string, suffix = ''): string {
 
 /** Normalize an npm git repository link into an `owner/repo` slug when possible. */
 function repositorySlug(link: unknown): string | null {
-  if (typeof link !== 'string' || link.trim() === '') return null
-  const withoutProtocol = link.replace(/^git\+/, '').replace(/^git:\/\//, 'https://')
+  const url = typeof link === 'object' && link !== null && !Array.isArray(link)
+    ? (link as { url?: unknown }).url
+    : link
+  if (typeof url !== 'string' || url.trim() === '') return null
+  const withoutProtocol = url.replace(/^git\+/, '').replace(/^git:\/\//, 'https://')
   const match = /github\.com\/([^/]+)\/([^/#?]+?)(?:\.git)?(?:[/?#]|$)/.exec(withoutProtocol)
   return match === null ? null : `${match[1]}/${match[2]}`
+}
+
+/**
+ * Names one likely exact npm package. This is a discovery aid, not validation:
+ * the registry manifest check remains the authority for installability.
+ */
+function exactPackageNames(query: string): readonly string[] {
+  if (query === '') return []
+  const candidates = new Set<string>([query])
+  const words = query.split(' ').filter(part => part !== '')
+  if (words.length > 1) candidates.add(words.join('-'))
+  return [...candidates].filter(candidate =>
+    candidate.length <= 214
+    && !candidate.startsWith('.')
+    && !candidate.startsWith('_')
+    && /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(candidate),
+  )
 }
 
 /** Derive display owner/name from a repository slug, npm scope, or package name. */
@@ -293,14 +317,53 @@ export class PluginManagerGateway extends TypertRemoteService {
     }
   }
 
-  /** Query one npm page, verify each candidate manifest, and rank the verified result. */
+  /**
+   * Verify likely exact npm package names and turn their latest manifests into
+   * high-priority candidates. Lookup failures are normal: the query usually
+   * remains free text.
+   * @param query - normalized search text.
+   * @returns verified candidates for names the user may have typed literally.
+   */
+  private async exactSearchCandidates(query: string): Promise<NpmPluginCandidate[]> {
+    return (await Promise.all(exactPackageNames(query).map(async (packageName) => {
+      try {
+        const manifest = await this.fetchJson(npmUrl(packageName, '/latest')) as DshPackageManifest
+        const hasBundle = manifest.dsh?.bundle != null
+        const hasClient = manifest.dsh?.client != null
+        if (!hasBundle && !hasClient) return null
+        const keywords = Array.isArray(manifest.keywords) ? manifest.keywords : []
+        if (!keywords.includes('dsh-plugin')) return null
+        return {
+          packageName,
+          description: typeof manifest.description === 'string' ? manifest.description : null,
+          repository: repositorySlug(manifest.repository),
+          homepage: typeof manifest.homepage === 'string' ? manifest.homepage : null,
+          npmUrl: `https://www.npmjs.com/package/${packageName}`,
+          downloads: 0,
+          searchScore: Number.MAX_SAFE_INTEGER,
+        }
+      } catch {
+        // A nonexistent or private exact name just leaves the ranked results alone.
+        return null
+      }
+    }))).flatMap(candidate => candidate === null ? [] : [candidate])
+  }
+
+  /**
+   * Query one npm page, verify each candidate manifest, and rank the verified result.
+   * A query that names an npm package is also looked up directly because npm's
+   * relevance search may bury a new or zero-download exact match behind older
+   * high-download keyword matches.
+   */
   private async searchCatalog(query: string, page: number): Promise<CatalogPageResult> {
     const searchText = ['keywords:dsh-plugin', query].filter(part => part !== '').join(' ')
-    const from = page * CATALOG_PAGE_SIZE
-    const search = await this.fetchJson(
-      `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(searchText)}` +
-        `&size=${CATALOG_PAGE_SIZE}&from=${from}`,
-    ) as NpmSearchResponse
+    const [search, exactCandidates] = await Promise.all([
+      this.fetchJson(
+        `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(searchText)}` +
+          `&size=${CATALOG_PAGE_SIZE}&from=${page * CATALOG_PAGE_SIZE}`,
+      ) as Promise<NpmSearchResponse>,
+      page === 0 ? this.exactSearchCandidates(query) : Promise.resolve([]),
+    ])
     const objects = search.objects ?? []
     const totalMatches = typeof search.total === 'number' && Number.isFinite(search.total)
       && search.total >= 0
@@ -309,26 +372,31 @@ export class PluginManagerGateway extends TypertRemoteService {
     const hasMore = objects.length === CATALOG_PAGE_SIZE
       && totalMatches !== null
       && page < CATALOG_MAX_PAGE
-      && from + CATALOG_PAGE_SIZE < totalMatches
-    const candidates = objects.flatMap((result): NpmPluginCandidate[] => {
-      const pkg = result.package
-      const packageName = typeof pkg?.name === 'string' ? pkg.name : ''
-      const keywords = Array.isArray(pkg?.keywords) ? pkg.keywords : []
-      const searchScore = typeof result.searchScore === 'number' && Number.isFinite(result.searchScore)
-        ? result.searchScore
-        : 0
-      if (packageName === '' || !keywords.includes('dsh-plugin')) return []
-      if (packageName.startsWith('@deepseek-ai/')) return []
-      return [{
-        packageName,
-        description: typeof pkg?.description === 'string' ? pkg.description : null,
-        repository: repositorySlug(pkg?.links?.repository),
-        homepage: typeof pkg?.links?.homepage === 'string' ? pkg.links.homepage : null,
-        npmUrl: typeof pkg?.links?.npm === 'string' ? pkg.links.npm : null,
-        downloads: typeof result.downloads?.monthly === 'number' ? result.downloads.monthly : 0,
-        searchScore,
-      }]
-    })
+      && page * CATALOG_PAGE_SIZE + CATALOG_PAGE_SIZE < totalMatches
+    const candidates = [
+      ...exactCandidates,
+      ...objects.flatMap((result): NpmPluginCandidate[] => {
+        const pkg = result.package
+        const packageName = typeof pkg?.name === 'string' ? pkg.name : ''
+        const keywords = Array.isArray(pkg?.keywords) ? pkg.keywords : []
+        const searchScore = typeof result.searchScore === 'number' && Number.isFinite(result.searchScore)
+          ? result.searchScore
+          : 0
+        if (packageName === '' || !keywords.includes('dsh-plugin')) return []
+        if (packageName.startsWith('@deepseek-ai/')) return []
+        return [{
+          packageName,
+          description: typeof pkg?.description === 'string' ? pkg.description : null,
+          repository: repositorySlug(pkg?.links?.repository),
+          homepage: typeof pkg?.links?.homepage === 'string' ? pkg.links.homepage : null,
+          npmUrl: typeof pkg?.links?.npm === 'string' ? pkg.links.npm : null,
+          downloads: typeof result.downloads?.monthly === 'number' ? result.downloads.monthly : 0,
+          searchScore,
+        }]
+      }),
+    ].filter((candidate, index, all) =>
+      all.findIndex(match => match.packageName === candidate.packageName) === index,
+    )
 
     // The keyword is an author claim; the manifest is the installability contract.
     const verified = await mapWithLimit(candidates, CATALOG_FETCH_CONCURRENCY, async (candidate) => {
