@@ -49,6 +49,8 @@ export interface PluginManagerRestartResult {
 export interface PluginManagerCatalogRequest {
   /** Free-text query passed to npm after the required `dsh-plugin` keyword filter. */
   query?: string
+  /** Zero-based result page; the Host fixes the page size for predictable cost. */
+  page?: number
 }
 
 /** One installable npm package discovered from the `dsh-plugin` keyword directory. */
@@ -73,5 +75,13 @@ export interface PluginManagerCatalogEntry {
 export interface PluginManagerCatalog {
   /** Normalized query actually answered, so clients can discard stale responses. */
   query: string
+  /** Zero-based page actually answered. */
+  page: number
+  /** Fixed number of npm candidates requested per page, before manifest verification. */
+  pageSize: number
+  /** npm's raw match estimate for this query, when the registry supplies one. */
+  totalMatches: number | null
+  /** Whether npm reported enough raw matches for another page. */
+  hasMore: boolean
   entries: readonly PluginManagerCatalogEntry[]
 }

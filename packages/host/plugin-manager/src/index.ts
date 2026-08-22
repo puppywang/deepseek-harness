@@ -31,9 +31,12 @@ export type * from './types.ts'
 const PNPM_GRACE_MS = 15 * 60_000
 const PNPM_COLLECT_BYTES = 64 * 1024
 const CATALOG_TTL_MS = 30 * 60_000
-const CATALOG_SIZE = 250
+/** Small enough that one page stays responsive; large enough to avoid chatty paging. */
+const CATALOG_PAGE_SIZE = 30
+/** Cap deep paging where npm relevance degrades and every page costs manifest checks. */
+const CATALOG_MAX_PAGE = 19
 const CATALOG_FETCH_CONCURRENCY = 8
-const CATALOG_CACHE_LIMIT = 32
+const CATALOG_CACHE_LIMIT = 64
 
 /** One abbreviated npm search result used before the package manifest is verified. */
 interface NpmSearchPackage {
@@ -64,11 +67,20 @@ interface DshPackageManifest {
   }
 }
 
-/** A cached catalog response, so repeated searches do not re-walk npm. */
+/** One npm search response page with its registry-side match estimate. */
+interface NpmSearchResponse {
+  total?: unknown
+  objects?: readonly NpmSearchResult[]
+}
+
+/** A cached catalog page, so repeated searches do not re-walk npm. */
 interface CatalogCache {
   at: number
-  entries: PluginManagerCatalogEntry[]
+  result: Omit<PluginManagerCatalog, 'query'>
 }
+
+/** The exact catalog payload produced by one registry search and manifest pass. */
+type CatalogPageResult = Omit<PluginManagerCatalog, 'query'>
 
 /** One npm candidate retained before its latest manifest proves the DSH role. */
 interface NpmPluginCandidate {
@@ -99,6 +111,17 @@ function sleep(ms: number): Promise<void> {
 function normalizeCatalogQuery(value: unknown): string {
   if (typeof value !== 'string') return ''
   return value.replace(/\s+/gu, ' ').trim().slice(0, 128).toLocaleLowerCase()
+}
+
+/** Clamp the requested page into the supported browsing window. */
+function normalizeCatalogPage(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) return 0
+  return Math.min(value, CATALOG_MAX_PAGE)
+}
+
+/** Build an unambiguous cache key for one normalized query/page pair. */
+function catalogCacheKey(query: string, page: number): string {
+  return `${query}\u0000${page}`
 }
 
 /** Build an npm registry URL without turning a scope separator into a path segment. */
@@ -229,32 +252,36 @@ export class PluginManagerGateway extends TypertRemoteService {
   }
 
   /**
-   * Search npm packages carrying the `dsh-plugin` keyword and keep only manifests
-   * that declare a DSH bundle or client role. An empty query returns the popular
-   * directory; a non-empty query is answered by npm's server-side text ranking.
-   * @param request - optional free-text search requested by the client.
-   * @returns the discoverable plugin catalog for the normalized query.
+   * Search one page of npm packages carrying the `dsh-plugin` keyword and keep
+   * only manifests that declare a DSH bundle or client role. An empty query
+   * returns the popular directory; a non-empty query uses npm's server-side
+   * text ranking. Small pages keep first paint responsive; clients page on demand.
+   * @param request - optional free-text search and zero-based page.
+   * @returns one verified catalog page for the normalized query.
    */
   @Remote('catalog')
   async catalog(request?: PluginManagerCatalogRequest): Promise<PluginManagerCatalog> {
     const query = normalizeCatalogQuery(request?.query)
+    const page = normalizeCatalogPage(request?.page)
+    const key = catalogCacheKey(query, page)
     const now = Date.now()
-    const cache = this.catalogCaches.get(query)
+    const cache = this.catalogCaches.get(key)
     if (cache !== undefined && now - cache.at < CATALOG_TTL_MS) {
-      // Refresh insertion order so the bounded cache keeps hot queries first.
-      this.catalogCaches.delete(query)
-      this.catalogCaches.set(query, cache)
-      return { query, entries: cache.entries }
+      // Refresh insertion order so the bounded cache keeps hot pages first.
+      this.catalogCaches.delete(key)
+      this.catalogCaches.set(key, cache)
+      return { query, ...cache.result }
     }
 
-    const pending = this.catalogInflight.get(query)
+    const pending = this.catalogInflight.get(key)
     if (pending !== undefined) return pending
 
-    const searched = this.searchCatalog(query).then(entries => ({ query, entries }))
-    this.catalogInflight.set(query, searched)
+    const searched = this.searchCatalog(query, page).then(result => ({ query, ...result }))
+    this.catalogInflight.set(key, searched)
     try {
       const result = await searched
-      this.catalogCaches.set(query, { at: now, entries: result.entries })
+      const { query: _query, ...cached } = result
+      this.catalogCaches.set(key, { at: now, result: cached })
       while (this.catalogCaches.size > CATALOG_CACHE_LIMIT) {
         const oldest = this.catalogCaches.keys().next()
         if (oldest.done === true) break
@@ -262,17 +289,28 @@ export class PluginManagerGateway extends TypertRemoteService {
       }
       return result
     } finally {
-      this.catalogInflight.delete(query)
+      this.catalogInflight.delete(key)
     }
   }
 
-  /** Query npm once, verify each candidate manifest, and rank the verified result. */
-  private async searchCatalog(query: string): Promise<PluginManagerCatalogEntry[]> {
+  /** Query one npm page, verify each candidate manifest, and rank the verified result. */
+  private async searchCatalog(query: string, page: number): Promise<CatalogPageResult> {
     const searchText = ['keywords:dsh-plugin', query].filter(part => part !== '').join(' ')
+    const from = page * CATALOG_PAGE_SIZE
     const search = await this.fetchJson(
-      `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(searchText)}&size=${CATALOG_SIZE}`,
-    ) as { objects?: readonly NpmSearchResult[] }
-    const candidates = (search.objects ?? []).flatMap((result): NpmPluginCandidate[] => {
+      `https://registry.npmjs.org/-/v1/search?text=${encodeURIComponent(searchText)}` +
+        `&size=${CATALOG_PAGE_SIZE}&from=${from}`,
+    ) as NpmSearchResponse
+    const objects = search.objects ?? []
+    const totalMatches = typeof search.total === 'number' && Number.isFinite(search.total)
+      && search.total >= 0
+      ? search.total
+      : null
+    const hasMore = objects.length === CATALOG_PAGE_SIZE
+      && totalMatches !== null
+      && page < CATALOG_MAX_PAGE
+      && from + CATALOG_PAGE_SIZE < totalMatches
+    const candidates = objects.flatMap((result): NpmPluginCandidate[] => {
       const pkg = result.package
       const packageName = typeof pkg?.name === 'string' ? pkg.name : ''
       const keywords = Array.isArray(pkg?.keywords) ? pkg.keywords : []
@@ -329,7 +367,13 @@ export class PluginManagerGateway extends TypertRemoteService {
         || right.downloads - left.downloads
         || left.packageName.localeCompare(right.packageName)
     })
-    return entries
+    return {
+      page,
+      pageSize: CATALOG_PAGE_SIZE,
+      totalMatches,
+      hasMore,
+      entries,
+    }
   }
 
   /**

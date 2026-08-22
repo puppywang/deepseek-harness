@@ -171,12 +171,18 @@ describe('PluginManagerGateway', () => {
       await withPluginEnv(profileFixture(), async () => {
         const { manager } = await harness()
         const catalog = await manager.catalog()
-        expect(catalog).toEqual({ query: '', entries: [expect.objectContaining({
-          packageName: '@anysearch/anysearch-dsh',
-          repo: 'anysearch-team/anysearch-dsh',
-          downloads: 42,
-        }),
-        ] })
+        expect(catalog).toEqual({
+          query: '',
+          page: 0,
+          pageSize: 30,
+          totalMatches: null,
+          hasMore: false,
+          entries: [expect.objectContaining({
+            packageName: '@anysearch/anysearch-dsh',
+            repo: 'anysearch-team/anysearch-dsh',
+            downloads: 42,
+          })],
+        })
         // The verified directory is cached for the lifetime of this deployment.
         await manager.catalog()
         expect(fetchMock).toHaveBeenCalledTimes(3)
@@ -244,6 +250,10 @@ describe('PluginManagerGateway', () => {
         if (firstSearchUrl === undefined) throw new Error('npm search was not called')
         expect(decodeURIComponent(firstSearchUrl)).toContain('text=keywords:dsh-plugin memory')
         expect(catalog.query).toBe('memory')
+        expect(catalog.page).toBe(0)
+        expect(catalog.pageSize).toBe(30)
+        expect(catalog.totalMatches).toBeNull()
+        expect(catalog.hasMore).toBe(false)
         expect(catalog.entries.map(entry => entry.packageName)).toEqual([
           'memory-dsh',
           'popular-memory-dsh',
@@ -251,6 +261,82 @@ describe('PluginManagerGateway', () => {
         // A distinct query has a distinct cache entry.
         await manager.catalog({ query: 'memory' })
         expect(fetchMock).toHaveBeenCalledTimes(3)
+      })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('fetches and caches catalog pages on demand', async () => {
+    const searchUrls: string[] = []
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url
+      if (url.includes('/-/v1/search')) {
+        searchUrls.push(url)
+        const page = url.includes('from=30') ? 1 : 0
+        // A full first page plus a positive total tells the client another
+        // page exists; the second page is naturally shorter.
+        const names = Array.from({ length: page === 0 ? 30 : 1 }, (_, index) => (
+          `page-${page}-plugin-${String(index).padStart(2, '0')}-dsh`
+        ))
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            total: 31,
+            objects: names.map((name, index) => ({
+              searchScore: 100 - index,
+              downloads: { monthly: 10 },
+              package: {
+                name,
+                keywords: ['dsh-plugin'],
+                links: { repository: `git+https://github.com/example/${name}.git` },
+              },
+            })),
+          }),
+        } as Response
+      }
+      const packageName = /registry\.npmjs\.org\/([^/]+)\/latest$/.exec(url)?.[1]
+      if (packageName !== undefined) {
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({ name: packageName, dsh: { client: {} } }),
+        } as Response
+      }
+      throw new Error(`unexpected catalog URL ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    try {
+      await withPluginEnv(profileFixture(), async () => {
+        const { manager } = await harness()
+        const firstPage = await manager.catalog({ query: '', page: 0 })
+        expect(firstPage).toEqual({
+          query: '',
+          page: 0,
+          pageSize: 30,
+          totalMatches: 31,
+          hasMore: true,
+          entries: expect.any(Array),
+        })
+        expect(firstPage.entries).toHaveLength(30)
+
+        const secondPage = await manager.catalog({ query: '', page: 1 })
+        expect(secondPage.page).toBe(1)
+        expect(secondPage.hasMore).toBe(false)
+        expect(secondPage.entries).toHaveLength(1)
+        expect(decodeURIComponent(searchUrls[1] ?? '')).toContain('from=30')
+
+        // Each query/page pair is cached independently.
+        await manager.catalog({ query: '', page: 0 })
+        await manager.catalog({ query: '', page: 1 })
+        expect(fetchMock).toHaveBeenCalledTimes(33)
       })
     } finally {
       vi.unstubAllGlobals()

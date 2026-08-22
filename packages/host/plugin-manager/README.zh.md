@@ -18,4 +18,4 @@
 
 - **单一 profile**——本服务管理 `web` profile（`resolveProfileDir('web')`）；暂不暴露多 profile 管理。
 - **原生模块可能无法热加载**——服务会立即重新应用 patch 栈；若某个插件热加载失败，会报告其 Loader 错误，并以进程重启作为回退。
-- **目录结果有边界且必须校验**——npm 每次查询最多返回 250 个候选；只有关键字但没有 DSH bundle/client manifest 的包会被跳过。已校验的查询会短暂缓存。npm 可用性和速率限制适用。
+- **目录分页有边界且必须校验**——每页向 npm 请求 30 个候选；由于深层相关度会下降且每页都需要 manifest 检查，最多浏览 20 页。只有关键字但没有 DSH bundle/client manifest 的包会被跳过。已校验的分页会短暂缓存，npm 可用性和速率限制适用。

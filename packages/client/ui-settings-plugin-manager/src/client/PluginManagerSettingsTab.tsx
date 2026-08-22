@@ -56,9 +56,17 @@ type CatalogState =
   | {
     readonly status: 'ready'
     readonly query: string
+    readonly page: number
+    readonly pageSize: number
+    readonly totalMatches: number | null
+    readonly hasMore: boolean
     readonly entries: readonly PluginManagerCatalogEntry[]
     /** True while a new server-side query keeps the prior results visible. */
     readonly refreshing: boolean
+    /** True while the next page is appended to the already-visible results. */
+    readonly loadingMore: boolean
+    /** True when only the page request failed; prior pages remain useful. */
+    readonly loadMoreFailed: boolean
   }
 
 /** Render the installed-plugin manager. */
@@ -89,19 +97,72 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
     return () => { current = false }
   }, [list, request])
 
-  const loadCatalog = useCallback((query: string): void => {
+  const loadCatalog = useCallback((query: string, page = 0): void => {
     const requestId = ++catalogRequestRef.current
-    setCatalogState(current => current.status === 'ready'
-      ? { ...current, refreshing: true }
-      : { status: 'loading' })
-    void Promise.resolve().then(() => catalog({ query })).then(
+    setCatalogState((current) => {
+      if (page === 0) {
+        return current.status === 'ready'
+          ? { ...current, refreshing: true, loadingMore: false, loadMoreFailed: false }
+          : { status: 'loading' }
+      }
+      return current.status === 'ready' && current.query === query && current.page + 1 === page
+        ? { ...current, loadingMore: true, loadMoreFailed: false }
+        : current
+    })
+    void Promise.resolve().then(() => catalog({ query, page })).then(
       (result) => {
-        if (catalogRequestRef.current !== requestId || result.query !== query) return
-        setCatalogState({ status: 'ready', query, entries: result.entries, refreshing: false })
+        if (catalogRequestRef.current !== requestId || result.query !== query || result.page !== page) return
+        setCatalogState((current) => {
+          if (page > 0) {
+            const previous = current.status === 'ready'
+              && current.query === query
+              && current.page + 1 === page
+              ? current
+              : undefined
+            // npm rankings can shift between requests, so a package that moved
+            // pages is appended once rather than shown twice.
+            const seenPackageNames = new Set(
+              (previous?.entries ?? []).map(entry => entry.packageName),
+            )
+            const entries = [
+              ...(previous?.entries ?? []),
+              ...result.entries.filter(entry => !seenPackageNames.has(entry.packageName)),
+            ]
+            return {
+              status: 'ready',
+              query,
+              page: result.page,
+              pageSize: result.pageSize,
+              totalMatches: result.totalMatches,
+              hasMore: result.hasMore,
+              entries,
+              refreshing: false,
+              loadingMore: false,
+              loadMoreFailed: false,
+            }
+          }
+          return {
+            status: 'ready',
+            query,
+            page: result.page,
+            pageSize: result.pageSize,
+            totalMatches: result.totalMatches,
+            hasMore: result.hasMore,
+            entries: result.entries,
+            refreshing: false,
+            loadingMore: false,
+            loadMoreFailed: false,
+          }
+        })
       },
       () => {
         if (catalogRequestRef.current !== requestId) return
-        setCatalogState({ status: 'error' })
+        setCatalogState((current) => {
+          if (page === 0) return { status: 'error' }
+          return current.status === 'ready' && current.query === query && current.page + 1 === page
+            ? { ...current, loadingMore: false, loadMoreFailed: true }
+            : current
+        })
       },
     )
   }, [catalog])
@@ -230,6 +291,30 @@ export function PluginManagerSettingsTab(props: PluginManagerSettingsTabProps): 
               )
             })}
           </ul>
+        )
+        : null}
+      {catalogState.status === 'ready' && catalogEntries.length > 0
+        ? (
+          <div className={css.pager}>
+            <span className={css.meta}>
+              {t('discoverShown').replace('{shown}', String(catalogEntries.length))}
+            </span>
+            {catalogState.loadMoreFailed
+              ? <p className={css.error}>{t('discoverMoreFailed')}</p>
+              : null}
+            {catalogState.hasMore || catalogState.loadingMore || catalogState.loadMoreFailed
+              ? (
+                <button
+                  className={css.ghostButton}
+                  type="button"
+                  disabled={catalogState.refreshing || catalogState.loadingMore}
+                  onClick={() => { loadCatalog(catalogQuery, catalogState.page + 1) }}
+                >
+                  {catalogState.loadingMore ? t('discoverLoadingMore') : t('discoverLoadMore')}
+                </button>
+              )
+              : null}
+          </div>
         )
         : null}
 

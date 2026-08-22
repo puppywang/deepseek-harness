@@ -9,7 +9,8 @@ export type PluginManagerLocaleKey =
   | 'removeConfirm' | 'empty' | 'noMatch' | 'loadFailed' | 'retry' | 'mutateFailed'
   | 'discoverTitle' | 'discoverIntro' | 'discoverSearch' | 'discoverEmpty' | 'discoverFailed'
   | 'discoverLoading' | 'discoverInstall' | 'discoverInstalling' | 'discoverInstalled'
-  | 'monthlyDownloads'
+  | 'monthlyDownloads' | 'discoverShown' | 'discoverLoadMore' | 'discoverLoadingMore'
+  | 'discoverMoreFailed'
   | 'restartConfirmTitle' | 'restartConfirmDescription' | 'restartAcknowledge'
   | 'restartCancel' | 'restartConfirm' | 'restarting' | 'restartFailed'
 
@@ -53,6 +54,10 @@ export const en: Record<PluginManagerLocaleKey, string> = {
   discoverInstalling: 'Installing\u2026',
   discoverInstalled: 'Installed',
   monthlyDownloads: 'Monthly downloads',
+  discoverShown: '{shown} verified plugins shown',
+  discoverLoadMore: 'Load more',
+  discoverLoadingMore: 'Loading more…',
+  discoverMoreFailed: 'Loading more plugins failed.',
   restartConfirmTitle: 'Restart dsh to apply changes?',
   restartConfirmDescription: 'A restart is required to finish this plugin change. Restarting will interrupt conversations that are currently running. Confirm that you want to continue.',
   restartAcknowledge: 'I understand running conversations will be interrupted.',
@@ -102,6 +107,10 @@ export const zh: Record<PluginManagerLocaleKey, string> = {
   discoverInstalling: '安装中\u2026',
   discoverInstalled: '已安装',
   monthlyDownloads: '月下载',
+  discoverShown: '已显示 {shown} 个插件',
+  discoverLoadMore: '加载更多',
+  discoverLoadingMore: '正在加载更多…',
+  discoverMoreFailed: '加载更多插件失败。',
   restartConfirmTitle: '需要重启 dsh 才能完成变更？',
   restartConfirmDescription: '完成这项插件变更需要重启 dsh。重启会中断当前正在运行的对话。请确认后继续。',
   restartAcknowledge: '我已知晓正在进行的对话会被中断。',

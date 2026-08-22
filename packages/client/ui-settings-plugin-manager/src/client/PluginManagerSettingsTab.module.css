@@ -210,3 +210,15 @@
   flex-shrink: 0;
   gap: 8px;
 }
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.pager .error {
+  flex-basis: 100%;
+  margin: 0;
+}
