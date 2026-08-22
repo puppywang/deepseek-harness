@@ -133,11 +133,14 @@ export class RepositoryCleaner {
       const parsed = parseConfig(configPath)
       if (parsed.options.outDir !== undefined) {
         const typesDirectory = resolve(parsed.options.outDir)
+        const outputRelative = repositoryPath(this.root, typesDirectory)
         const outputDirectory = basename(typesDirectory) === 'types'
           ? dirname(typesDirectory)
           : typesDirectory === nativeEntryOutput
             ? typesDirectory
-            : undefined
+            : /^apps\/[^/]+\/lib$/.test(outputRelative)
+              ? typesDirectory
+              : undefined
         if (outputDirectory === undefined) {
           throw new Error(`clean: expected TypeScript outDir to end in /types: ${repositoryPath(this.root, typesDirectory)}`)
         }
