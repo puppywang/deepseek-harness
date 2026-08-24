@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subprocess'
 import { resolveProfileDir, loadProfile, reloadRootInclude } from '@deepseek-ai/dsh-app-boot'
+import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import {
   installProfilePlugin,
   listProfilePlugins,
@@ -14,6 +15,22 @@ import {
 } from '@deepseek-ai/dsh-plugin-manager'
 import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from 'zod'
+import {
+  buildCatalogIndex,
+  catalogCacheKey,
+  loadCatalogIndex,
+  manifestDeclaresRole,
+  mapWithLimit,
+  npmUrl,
+  rankCatalogIndex,
+  repositorySlug,
+  saveCatalogIndexAtomic,
+  type CatalogFetchJson,
+  type DshPackageManifest,
+  type NpmSearchResponse,
+  type PluginCatalogIndex,
+  type PluginCatalogIndexEntry,
+} from './catalog-index.ts'
 import type {
   InstalledPluginView,
   PluginManagerCatalog,
@@ -33,68 +50,37 @@ const PNPM_COLLECT_BYTES = 64 * 1024
 const CATALOG_TTL_MS = 30 * 60_000
 /** Small enough that one page stays responsive; large enough to avoid chatty paging. */
 const CATALOG_PAGE_SIZE = 30
-/** Cap deep paging where npm relevance degrades and every page costs manifest checks. */
+/** Cap deep paging of the live npm fallback, where relevance degrades and every page costs manifest checks. */
 const CATALOG_MAX_PAGE = 19
 const CATALOG_FETCH_CONCURRENCY = 8
 const CATALOG_CACHE_LIMIT = 64
+/** Rebuild the persisted index once its build timestamp ages past this window. */
+const CATALOG_INDEX_REFRESH_MS = 24 * 60 * 60_000
+/** After one failed rebuild, wait this long before the next catalog call retries it. */
+const CATALOG_INDEX_RETRY_MS = 5 * 60_000
+/** Local index pages cost no registry traffic, so paging is bounded only for sanity. */
+const CATALOG_INDEX_MAX_PAGE = 200
 
-/** One abbreviated npm search result used before the package manifest is verified. */
-interface NpmSearchPackage {
-  name?: unknown
-  description?: unknown
-  version?: unknown
-  keywords?: unknown
-  links?: {
-    homepage?: unknown
-    repository?: unknown
-    npm?: unknown
-  }
+/**
+ * Absolute path of the durable plugin catalog index under the Harness home.
+ * The directory is created by the atomic save on first rebuild.
+ */
+function catalogIndexPath(): string {
+  return dshHomePath('cache', 'plugin-catalog-index.json')
 }
 
-/** One npm search result with its monthly download estimate. */
-interface NpmSearchResult {
-  downloads?: { monthly?: unknown }
-  searchScore?: unknown
-  package?: NpmSearchPackage
+/** One npm candidate retained before its latest manifest proves the DSH role. */
+interface NpmPluginCandidate extends PluginCatalogIndexEntry {
+  searchScore: number
 }
 
-/** The latest manifest slice used to identify and describe an exact package. */
-interface DshPackageManifest {
-  name?: unknown
-  description?: unknown
-  keywords?: unknown
-  homepage?: unknown
-  repository?: unknown
-  dsh?: {
-    bundle?: unknown
-    client?: unknown
-  }
-}
+/** The exact catalog payload produced by one registry pass or one local index query. */
+type CatalogPageResult = Omit<PluginManagerCatalog, 'query'>
 
-/** One npm search response page with its registry-side match estimate. */
-interface NpmSearchResponse {
-  total?: unknown
-  objects?: readonly NpmSearchResult[]
-}
-
-/** A cached catalog page, so repeated searches do not re-walk npm. */
+/** A cached catalog page, so repeated searches do not re-walk npm or the index. */
 interface CatalogCache {
   at: number
   result: Omit<PluginManagerCatalog, 'query'>
-}
-
-/** The exact catalog payload produced by one registry search and manifest pass. */
-type CatalogPageResult = Omit<PluginManagerCatalog, 'query'>
-
-/** One npm candidate retained before its latest manifest proves the DSH role. */
-interface NpmPluginCandidate {
-  packageName: string
-  description: string | null
-  repository: string | null
-  homepage: string | null
-  npmUrl: string | null
-  downloads: number
-  searchScore: number
 }
 
 /** Absolute `package.json` of the running dsh installation, or an explicit test override. */
@@ -120,29 +106,36 @@ function normalizeCatalogQuery(value: unknown): string {
 /** Clamp the requested page into the supported browsing window. */
 function normalizeCatalogPage(value: unknown): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) return 0
-  return Math.min(value, CATALOG_MAX_PAGE)
+  return Math.min(value, CATALOG_INDEX_MAX_PAGE)
 }
 
-/** Build an unambiguous cache key for one normalized query/page pair. */
-function catalogCacheKey(query: string, page: number): string {
-  return `${query}\u0000${page}`
+/** Derive display owner/name from a repository slug, npm scope, or package name. */
+function sourceIdentity(packageName: string, repo: string): { owner: string; name: string } {
+  const [repoOwner, repoName] = repo.split('/')
+  if (repoOwner !== undefined && repoName !== undefined && repoOwner !== '' && repoName !== '') {
+    return { owner: repoOwner, name: repoName }
+  }
+  const [scope, scopedName] = packageName.split('/')
+  if (scope !== undefined && scopedName !== undefined && scope.startsWith('@')) {
+    return { owner: scope.replace(/^@/, ''), name: scopedName }
+  }
+  return { owner: 'npm', name: packageName }
 }
 
-/** Build an npm registry URL without turning a scope separator into a path segment. */
-function npmUrl(packageName: string, suffix = ''): string {
-  const encoded = packageName.split('/').map(part => encodeURIComponent(part).replace('%40', '@')).join('/')
-  return `https://registry.npmjs.org/${encoded}${suffix}`
-}
-
-/** Normalize an npm git repository link into an `owner/repo` slug when possible. */
-function repositorySlug(link: unknown): string | null {
-  const url = typeof link === 'object' && link !== null && !Array.isArray(link)
-    ? (link as { url?: unknown }).url
-    : link
-  if (typeof url !== 'string' || url.trim() === '') return null
-  const withoutProtocol = url.replace(/^git\+/, '').replace(/^git:\/\//, 'https://')
-  const match = /github\.com\/([^/]+)\/([^/#?]+?)(?:\.git)?(?:[/?#]|$)/.exec(withoutProtocol)
-  return match === null ? null : `${match[1]}/${match[2]}`
+/** Project one verified candidate into its wire catalog entry. */
+function catalogEntryOf(candidate: PluginCatalogIndexEntry): PluginManagerCatalogEntry {
+  const repo = candidate.repository ?? candidate.packageName
+  const identity = sourceIdentity(candidate.packageName, repo)
+  return {
+    packageName: candidate.packageName,
+    repo,
+    description: candidate.description,
+    homepage: candidate.repository !== null
+      ? `https://github.com/${candidate.repository}`
+      : candidate.homepage ?? candidate.npmUrl,
+    downloads: candidate.downloads,
+    ...identity,
+  }
 }
 
 /**
@@ -162,45 +155,16 @@ function exactPackageNames(query: string): readonly string[] {
   )
 }
 
-/** Derive display owner/name from a repository slug, npm scope, or package name. */
-function sourceIdentity(packageName: string, repo: string): { owner: string; name: string } {
-  const [repoOwner, repoName] = repo.split('/')
-  if (repoOwner !== undefined && repoName !== undefined && repoOwner !== '' && repoName !== '') {
-    return { owner: repoOwner, name: repoName }
-  }
-  const [scope, scopedName] = packageName.split('/')
-  if (scope !== undefined && scopedName !== undefined && scope.startsWith('@')) {
-    return { owner: scope.replace(/^@/, ''), name: scopedName }
-  }
-  return { owner: 'npm', name: packageName }
-}
-
-/** Map over items with at most `limit` workers active at once. */
-async function mapWithLimit<T, R>(
-  items: readonly T[],
-  limit: number,
-  worker: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length)
-  let next = 0
-  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
-      const index = next
-      next += 1
-      const item = items[index] as T
-      results[index] = await worker(item, index)
-    }
-  })
-  await Promise.all(runners)
-  return results
-}
-
 /** Remote-only service managing the `web` profile's installed plugins. */
 export class PluginManagerGateway extends TypertRemoteService {
   static inject = ['subprocess']
 
   private catalogCaches = new Map<string, CatalogCache>()
   private catalogInflight = new Map<string, Promise<PluginManagerCatalog>>()
+  private catalogIndex: PluginCatalogIndex | null = null
+  private catalogIndexLoaded = false
+  private catalogIndexBuild: Promise<void> | null = null
+  private catalogIndexFailedAt = 0
 
   constructor(ctx: Context) {
     super(ctx, 'pluginManager')
@@ -276,10 +240,11 @@ export class PluginManagerGateway extends TypertRemoteService {
   }
 
   /**
-   * Search one page of npm packages carrying the `dsh-plugin` keyword and keep
-   * only manifests that declare a DSH bundle or client role. An empty query
-   * returns the popular directory; a non-empty query uses npm's server-side
-   * text ranking. Small pages keep first paint responsive; clients page on demand.
+   * Answer one catalog page from the persisted full index when it exists —
+   * deterministic local ranking over every verified `dsh-plugin` package — and
+   * otherwise fall back to live npm server-side search while the first index
+   * builds in the background. Small pages keep first paint responsive; clients
+   * page on demand.
    * @param request - optional free-text search and zero-based page.
    * @returns one verified catalog page for the normalized query.
    */
@@ -300,7 +265,11 @@ export class PluginManagerGateway extends TypertRemoteService {
     const pending = this.catalogInflight.get(key)
     if (pending !== undefined) return pending
 
-    const searched = this.searchCatalog(query, page).then(result => ({ query, ...result }))
+    const index = this.ensureCatalogIndex()
+    const searched = (index !== null
+      ? this.catalogFromIndex(index, query, page)
+      : this.searchCatalog(query, page)
+    ).then(result => ({ query, ...result }))
     this.catalogInflight.set(key, searched)
     try {
       const result = await searched
@@ -318,6 +287,49 @@ export class PluginManagerGateway extends TypertRemoteService {
   }
 
   /**
+   * Load the persisted index once per process and kick off exactly one
+   * background rebuild when it is missing or older than the refresh window.
+   * The stale copy keeps answering while the rebuild runs; a failed rebuild is
+   * retried by the next catalog call after the retry backoff.
+   * @returns the index to answer from, or null before the first successful build.
+   */
+  private ensureCatalogIndex(): PluginCatalogIndex | null {
+    if (!this.catalogIndexLoaded) {
+      this.catalogIndexLoaded = true
+      this.catalogIndex = loadCatalogIndex(catalogIndexPath())
+    }
+    const index = this.catalogIndex
+    const builtAt = index === null ? Number.NaN : Date.parse(index.builtAt)
+    const stale = Number.isNaN(builtAt) || Date.now() - builtAt > CATALOG_INDEX_REFRESH_MS
+    if (stale && this.catalogIndexBuild === null
+      && Date.now() - this.catalogIndexFailedAt > CATALOG_INDEX_RETRY_MS) {
+      this.catalogIndexBuild = this.rebuildCatalogIndex().finally(() => {
+        this.catalogIndexBuild = null
+      })
+    }
+    return index
+  }
+
+  /** Rebuild the full verified directory off the request path and persist it atomically. */
+  private async rebuildCatalogIndex(): Promise<void> {
+    try {
+      const fetchJson: CatalogFetchJson = url => this.fetchJson(url)
+      const index = await buildCatalogIndex(fetchJson)
+      this.catalogIndex = index
+      try {
+        saveCatalogIndexAtomic(catalogIndexPath(), index)
+      } catch {
+        // Persistence is best-effort: this process keeps answering from memory,
+        // and the next host rebuilds from the registry as usual.
+      }
+    } catch {
+      // The stale index keeps answering; the next catalog call retries after
+      // the backoff, so one registry outage never empties the directory.
+      this.catalogIndexFailedAt = Date.now()
+    }
+  }
+
+  /**
    * Verify likely exact npm package names and turn their latest manifests into
    * high-priority candidates. Lookup failures are normal: the query usually
    * remains free text.
@@ -328,9 +340,7 @@ export class PluginManagerGateway extends TypertRemoteService {
     return (await Promise.all(exactPackageNames(query).map(async (packageName) => {
       try {
         const manifest = await this.fetchJson(npmUrl(packageName, '/latest')) as DshPackageManifest
-        const hasBundle = manifest.dsh?.bundle != null
-        const hasClient = manifest.dsh?.client != null
-        if (!hasBundle && !hasClient) return null
+        if (!manifestDeclaresRole(manifest)) return null
         const keywords = Array.isArray(manifest.keywords) ? manifest.keywords : []
         if (!keywords.includes('dsh-plugin')) return null
         return {
@@ -339,6 +349,7 @@ export class PluginManagerGateway extends TypertRemoteService {
           repository: repositorySlug(manifest.repository),
           homepage: typeof manifest.homepage === 'string' ? manifest.homepage : null,
           npmUrl: `https://www.npmjs.com/package/${packageName}`,
+          keywords: keywords.filter((keyword): keyword is string => typeof keyword === 'string'),
           downloads: 0,
           searchScore: Number.MAX_SAFE_INTEGER,
         }
@@ -350,9 +361,38 @@ export class PluginManagerGateway extends TypertRemoteService {
   }
 
   /**
+   * Page the persisted index with deterministic local ranking. Live exact-name
+   * probes stay authoritative on the first page, so packages published after
+   * the last rebuild are found even though the index predates them.
+   */
+  private async catalogFromIndex(
+    index: PluginCatalogIndex,
+    query: string,
+    page: number,
+  ): Promise<CatalogPageResult> {
+    const ranked = rankCatalogIndex(index, query).map(candidate => catalogEntryOf(candidate))
+    const probes = page === 0 && query !== '' ? await this.exactSearchCandidates(query) : []
+    const known = new Set(ranked.map(entry => entry.packageName))
+    const probed = probes
+      .filter(candidate => !known.has(candidate.packageName))
+      .map(candidate => catalogEntryOf(candidate))
+    const entries = [...probed, ...ranked]
+    const start = page * CATALOG_PAGE_SIZE
+    return {
+      page,
+      pageSize: CATALOG_PAGE_SIZE,
+      totalMatches: entries.length,
+      hasMore: start + CATALOG_PAGE_SIZE < entries.length,
+      entries: entries.slice(start, start + CATALOG_PAGE_SIZE),
+    }
+  }
+
+  /**
    * Query one npm page, verify each candidate manifest, and rank the verified result.
-   * A query that names an npm package is also looked up directly because npm's
-   * relevance search may bury a new or zero-download exact match behind older
+   * This is the pre-index fallback: it answers before the first background
+   * build finishes and whenever the persisted index is unusable. A query that
+   * names an npm package is also looked up directly because npm's relevance
+   * search may bury a new or zero-download exact match behind older
    * high-download keyword matches.
    */
   private async searchCatalog(query: string, page: number): Promise<CatalogPageResult> {
@@ -390,6 +430,7 @@ export class PluginManagerGateway extends TypertRemoteService {
           repository: repositorySlug(pkg?.links?.repository),
           homepage: typeof pkg?.links?.homepage === 'string' ? pkg.links.homepage : null,
           npmUrl: typeof pkg?.links?.npm === 'string' ? pkg.links.npm : null,
+          keywords: keywords.filter((keyword): keyword is string => typeof keyword === 'string'),
           downloads: typeof result.downloads?.monthly === 'number' ? result.downloads.monthly : 0,
           searchScore,
         }]
@@ -402,9 +443,7 @@ export class PluginManagerGateway extends TypertRemoteService {
     const verified = await mapWithLimit(candidates, CATALOG_FETCH_CONCURRENCY, async (candidate) => {
       try {
         const manifest = await this.fetchJson(npmUrl(candidate.packageName, '/latest')) as DshPackageManifest
-        const hasBundle = manifest.dsh?.bundle != null
-        const hasClient = manifest.dsh?.client != null
-        if (!hasBundle && !hasClient) return null
+        if (!manifestDeclaresRole(manifest)) return null
         return candidate
       } catch {
         // A keyword-only package without a readable DSH manifest is not a plugin.
@@ -412,20 +451,9 @@ export class PluginManagerGateway extends TypertRemoteService {
       }
     })
 
-    const entries: PluginManagerCatalogEntry[] = verified.flatMap((candidate) => {
+    const entries = verified.flatMap((candidate) => {
       if (candidate === null) return []
-      const repo = candidate.repository ?? candidate.packageName
-      const identity = sourceIdentity(candidate.packageName, repo)
-      return [{
-        packageName: candidate.packageName,
-        repo,
-        description: candidate.description,
-        homepage: candidate.repository !== null
-          ? `https://github.com/${candidate.repository}`
-          : candidate.homepage ?? candidate.npmUrl,
-        downloads: candidate.downloads,
-        ...identity,
-      }]
+      return [catalogEntryOf(candidate)]
     })
     const searchScores = new Map(candidates.map(candidate => [candidate.packageName, candidate.searchScore]))
     entries.sort((left, right) => {

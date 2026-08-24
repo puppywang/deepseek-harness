@@ -10,7 +10,7 @@ Plugins 设置页只能手动输入包名/git spec 安装插件，用户无法�
 
 ## 决策
 
-- 在 Host Remote 中新增 `pluginManager.catalog`。它查询 GitHub 公共仓库搜索中的 `dsh-plugin` 话题，从 `raw.githubusercontent.com` 读取每个仓库的 `package.json`，返回可按 star 排序的可安装 npm 包名。客户端 Plugins 标签页渲染该目录，并可通过现有 `pluginManager.install` 安装任意条目。
+- 在 Host Remote 中新增 `pluginManager.catalog`，让 Plugins 设置页能渲染可安装目录，并可通过现有 `pluginManager.install` 安装任意条目。发现机制已不再使用 GitHub 话题搜索；现行基于 npm 的机制由[本地插件目录索引](2026-08-20-plugin-catalog-local-index.md)承接。
 - 将 AnySearch 随 Web 应用内置：把 `@anysearch/anysearch-dsh` 加入 `@deepseek-ai/dsh-web-app` 的依赖，并在 `cordis.patch.yml` 中挂载其两行 patch（`web.searchProvider: anysearch` 与 `web-search-anysearch` insert）。这样所有 web profile 都能使用 AnySearch，无需修改用户 profile manifest。
 
 ## 考虑过的替代方案
@@ -22,6 +22,5 @@ Plugins 设置页只能手动输入包名/git spec 安装插件，用户无法�
 ## 后果
 
 - web profile 现在默认把 AnySearch 作为 `web` 搜索提供方，并挂载其高级工具。
-- 用户无需离开应用即可从 Plugins 标签页发现并安装 `dsh-plugin` 话题仓库。
-- 目录依赖 GitHub 未认证的搜索/raw 限制；无法解析 `package.json` 的仓库会被跳过。
-- `pluginManager.catalog` 是普通（非 loopback 钉住）的只读 Remote；它只暴露公共 GitHub 元数据，不暴露 Host 配置。
+- 用户无需离开应用即可从 Plugins 标签页发现并安装社区插件。
+- `pluginManager.catalog` 是普通（非 loopback 钉住）的只读 Remote；目录只暴露公共 npm 元数据，不暴露 Host 配置。

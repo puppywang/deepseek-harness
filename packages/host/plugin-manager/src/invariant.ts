@@ -11,7 +11,7 @@ export const name = 'host-plugin-manager-invariant'
 /** Service required before the companion can reserve package ownership. */
 export const inject = ['invariants']
 
-/** No runtime invariant: mutations are profile-file effects owned by the shared manager library. */
+/** No runtime invariant: mutations are profile-file effects owned by the shared manager library, and the index is a disposable cache. */
 const install: InvariantInstaller = () => {}
 
 /** Register this package's invariant companion. */

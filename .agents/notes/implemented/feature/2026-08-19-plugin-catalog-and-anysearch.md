@@ -10,7 +10,7 @@ The Plugins settings tab only installed plugins by manually entering a package/g
 
 ## Decision
 
-- Add `pluginManager.catalog` to the Host Remote. It queries GitHub's public repository search for the `dsh-plugin` topic, reads each repository's `package.json` from `raw.githubusercontent.com`, and returns installable npm package names sorted by stars. The client Plugins tab renders this catalog and can install any entry with the existing `pluginManager.install`.
+- Add `pluginManager.catalog` to the Host Remote so the Plugins settings tab can render an installable catalog and install any entry with the existing `pluginManager.install`. Discovery no longer uses GitHub topic search; the shipped npm-based mechanism is owned by [the local plugin catalog index](2026-08-20-plugin-catalog-local-index.md).
 - Ship AnySearch with the web app by adding `@anysearch/anysearch-dsh` to `@deepseek-ai/dsh-web-app`'s dependencies and mounting its two patch rows (`web.searchProvider: anysearch` and the `web-search-anysearch` insert) in `cordis.patch.yml`. This makes AnySearch available to every web profile without changing the user's profile manifest.
 
 ## Alternatives considered
@@ -22,6 +22,5 @@ The Plugins settings tab only installed plugins by manually entering a package/g
 ## Consequences
 
 - The web profile now ships AnySearch as the default `web` search provider and its advanced tools are mounted.
-- Users can discover and install `dsh-plugin`-topic repositories from the Plugins tab without leaving the app.
-- The catalog depends on GitHub's unauthenticated search/raw limits; repositories without a resolvable `package.json` are skipped.
-- `pluginManager.catalog` is an ordinary (non-loopback-pinned) read-only Remote; it exposes only public GitHub metadata, not host configuration.
+- Users can discover and install community plugins from the Plugins tab without leaving the app.
+- The catalog exposes only public npm metadata, not host configuration; `pluginManager.catalog` is an ordinary (non-loopback-pinned) read-only Remote.
