@@ -26,6 +26,17 @@ export interface CommandResult {
 }
 
 /**
+ * Resolve npm-family CLIs on Windows: a bare `spawnSync` without a shell can
+ * only find `.exe` files, and since CVE-2024-27980 Node refuses `.cmd` shims
+ * unless a shell wraps them. The release steps pass only fixed literal
+ * arguments, so shell-joining those is safe.
+ */
+function resolveCommand(command: string): { file: string; shell: boolean } {
+  const shimmed = process.platform === 'win32' && ['pnpm', 'npm', 'npx', 'corepack'].includes(command)
+  return shimmed ? { file: `${command}.cmd`, shell: true } : { file: command, shell: false }
+}
+
+/**
  * Run a command and capture its output without judging the exit status.
  * @param command - executable name.
  * @param args - command arguments.
@@ -33,7 +44,8 @@ export interface CommandResult {
  * @returns The exit status and captured streams.
  */
 export function attempt(command: string, args: readonly string[], options: RunOptions = {}): CommandResult {
-  const result = spawnSync(command, [...args], { cwd: options.cwd, env: options.env, encoding: 'utf8' })
+  const resolved = resolveCommand(command)
+  const result = spawnSync(resolved.file, [...args], { cwd: options.cwd, env: options.env, encoding: 'utf8', shell: resolved.shell })
   if (result.error !== undefined) throw result.error
   return { status: result.status, stdout: result.stdout, stderr: result.stderr }
 }
@@ -58,10 +70,12 @@ export function attempt(command: string, args: readonly string[], options: RunOp
  * @returns The exit status and captured streams.
  */
 export function attemptEchoed(command: string, args: readonly string[], options: RunOptions = {}): CommandResult {
-  const result = spawnSync(command, [...args], {
+  const resolved = resolveCommand(command)
+  const result = spawnSync(resolved.file, [...args], {
     cwd: options.cwd,
     env: options.env,
     encoding: 'utf8',
+    shell: resolved.shell,
     // 'inherit' would leave nothing to capture, so the streams are piped and
     // echoed instead.
     stdio: ['inherit', 'pipe', 'pipe'],
@@ -95,7 +109,8 @@ export function capture(command: string, args: readonly string[], options: RunOp
  * @param options - working directory and environment.
  */
 export function run(command: string, args: readonly string[], options: RunOptions = {}): void {
-  const result = spawnSync(command, [...args], { cwd: options.cwd, env: options.env, stdio: 'inherit' })
+  const resolved = resolveCommand(command)
+  const result = spawnSync(resolved.file, [...args], { cwd: options.cwd, env: options.env, stdio: 'inherit', shell: resolved.shell })
   if (result.error !== undefined) throw result.error
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${String(result.status)}`)
 }
