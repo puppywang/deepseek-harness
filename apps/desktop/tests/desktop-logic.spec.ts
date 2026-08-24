@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   hasExpectedToken,
+  harnessWebArgv,
   isAllowedUrl,
   isExternalUrl,
   openPathRequest,
@@ -39,6 +40,19 @@ describe('desktop shell logic', () => {
   it('anchors desktop startup to the Web profile URL line', () => {
     expect(parseHarnessReadyUrl('[dsh] boot\ndsh web: http://127.0.0.1:4567\n')).toBe('http://127.0.0.1:4567')
     expect(parseHarnessReadyUrl('dsh web: http://192.168.1.5:4567')).toBeUndefined()
+  })
+
+  it('launches the web child on loopback with the browser handoff suppressed', () => {
+    const argv = harnessWebArgv('C:\\runtime\\lib\\bin.js')
+    expect(argv).toEqual([
+      'C:\\runtime\\lib\\bin.js',
+      'web',
+      '--host',
+      '127.0.0.1',
+      '--port',
+      '0',
+      '--no-open',
+    ])
   })
 
   it('keeps the default Harness home in Electron user data for profile plugins', () => {

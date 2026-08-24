@@ -11,6 +11,7 @@ import type { BrowserWindow as BrowserWindowType, Event as ElectronEvent, Messag
 import type { AppUpdater } from 'electron-updater'
 import {
   hasExpectedToken,
+  harnessWebArgv,
   isAllowedUrl,
   isExternalUrl,
   openPathRequest,
@@ -333,7 +334,7 @@ async function startHarnessAttempt(bridge: DesktopBridge): Promise<string> {
   const cliEntry = resolveCliEntry()
   const child = spawn(
     nodeExecutable(),
-    [cliEntry, 'web', '--host', '127.0.0.1', '--port', '0'],
+    [...harnessWebArgv(cliEntry)],
     {
       cwd: harnessRuntimeRoot(),
       env: {

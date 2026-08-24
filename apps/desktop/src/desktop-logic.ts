@@ -60,6 +60,17 @@ export function parseHarnessReadyUrl(output: string): string | undefined {
   return harnessReadyPattern.exec(output)?.[1]
 }
 
+/**
+ * Build the `dsh web` child argv. The desktop window is the only intended
+ * surface, so the browser handoff the web bundle performs for terminal
+ * launches stays suppressed.
+ * @param cliEntry - absolute path of the deployed dsh CLI entry.
+ * @returns the child process argv after the Node executable.
+ */
+export function harnessWebArgv(cliEntry: string): readonly string[] {
+  return [cliEntry, 'web', '--host', '127.0.0.1', '--port', '0', '--no-open']
+}
+
 export function hasExpectedToken(candidate: string | string[] | undefined, expected: string): boolean {
   if (typeof candidate !== 'string') return false
   const candidateBytes = Buffer.from(candidate, 'utf8')

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { execFile, spawn } from 'node:child_process'
 import { promisify } from 'node:util'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -17,8 +17,16 @@ const requestTimeoutMs = 10_000
 if (!existsSync(nodeExecutable)) throw new Error(`desktop runtime smoke: missing Node runtime: ${nodeExecutable}`)
 if (!existsSync(entry)) throw new Error(`desktop runtime smoke: missing dsh entry: ${entry}`)
 
+// The installer must ship the official brand; a plain `build` (no profile)
+// silently bakes the `DSH Local Build` fallback title into the served frontend.
+const frontendIndex = join(runtimeRoot, 'node_modules', '@deepseek-ai', 'dsh-web-frontend', 'dist', 'index.html')
+if (!existsSync(frontendIndex)) throw new Error(`desktop runtime smoke: missing web frontend dist: ${frontendIndex}`)
+if (!/<title>DeepSeek Harness<\/title>/.test(readFileSync(frontendIndex, 'utf8'))) {
+  throw new Error('desktop runtime smoke: the web frontend title is not the official brand; rebuild with `pnpm run build:official`')
+}
+
 const smokeHome = mkdtempSync(join(tmpdir(), 'dsh-desktop-runtime-smoke-'))
-const child = spawn(nodeExecutable, [entry, 'web', '--host', '127.0.0.1', '--port', '0'], {
+const child = spawn(nodeExecutable, [entry, 'web', '--host', '127.0.0.1', '--port', '0', '--no-open'], {
   cwd: runtimeRoot,
   env: {
     ...process.env,
