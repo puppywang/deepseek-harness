@@ -4,7 +4,7 @@ Status: implemented
 
 [English](2026-08-20-plugin-catalog-local-index.md) | 中文
 
-部分取代：[GitHub 插件目录与内置 AnySearch](2026-08-19-plugin-catalog-and-anysearch.md)（目录发现机制）。
+部分取代：[GitHub 插件目录与内置 AnySearch](2026-08-19-plugin-catalog-and-anysearch.zh.md)（目录发现机制）。
 
 ## 问题
 

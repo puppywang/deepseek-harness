@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-19-plugin-catalog-and-anysearch.md
 2026-08-19-plugin-catalog-and-anysearch.md: cdbb14673e92d35da147e814b8ee084c1dcd2fe2
-2026-08-19-plugin-catalog-and-anysearch.zh.md: 6b3ba17cb9d3fa89d8fc6299c7bf06a265a9b26a
+2026-08-19-plugin-catalog-and-anysearch.zh.md: a148617774529b35810b3c5a820232f4dadb44dc

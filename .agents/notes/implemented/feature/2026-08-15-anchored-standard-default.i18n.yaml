@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-anchored-standard-default.md
 2026-08-15-anchored-standard-default.md: c2047d0750ea473cfa7ba48c06e2a310214d236d
-2026-08-15-anchored-standard-default.zh.md: b12e796e425695e76aa05e87c643a88bdd0179c3
+2026-08-15-anchored-standard-default.zh.md: 5cf038c25828b2fafe4ddea62a769549f45f7ca8

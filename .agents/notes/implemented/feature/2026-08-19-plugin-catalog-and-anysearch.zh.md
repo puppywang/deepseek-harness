@@ -10,7 +10,7 @@ Plugins 设置页只能手动输入包名/git spec 安装插件，用户无法�
 
 ## 决策
 
-- 在 Host Remote 中新增 `pluginManager.catalog`，让 Plugins 设置页能渲染可安装目录，并可通过现有 `pluginManager.install` 安装任意条目。发现机制已不再使用 GitHub 话题搜索；现行基于 npm 的机制由[本地插件目录索引](2026-08-20-plugin-catalog-local-index.md)承接。
+- 在 Host Remote 中新增 `pluginManager.catalog`，让 Plugins 设置页能渲染可安装目录，并可通过现有 `pluginManager.install` 安装任意条目。发现机制已不再使用 GitHub 话题搜索；现行基于 npm 的机制由[本地插件目录索引](2026-08-20-plugin-catalog-local-index.zh.md)承接。
 - 将 AnySearch 随 Web 应用内置：把 `@anysearch/anysearch-dsh` 加入 `@deepseek-ai/dsh-web-app` 的依赖，并在 `cordis.patch.yml` 中挂载其两行 patch（`web.searchProvider: anysearch` 与 `web-search-anysearch` insert）。这样所有 web profile 都能使用 AnySearch，无需修改用户 profile manifest。
 
 ## 考虑过的替代方案

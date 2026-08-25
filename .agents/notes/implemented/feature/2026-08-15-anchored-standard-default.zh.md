@@ -10,14 +10,14 @@ Status: implemented
 
 ## 决策
 
-在 `packages/bundle/web-app/cordis.patch.yml` 中把 `agentPresets.default` 设为 `anchored-standard`。未命名预设的新会话组装锚定 preset：一句极简系统提示词加单平台 shell 与 `read` 的 bootstrap，在首次持久 `tool/call` 后晋升为完整 standard 工具目录。用户设置层仍然覆盖组装默认值，在 `standard`、`minimal`、`code` 或 `cordis` 下创建的会话保持其创建时的 preset。[原始 preset 记录](2026-08-15-anchored-standard-preset.md)拥有组装与 bootstrap 机制；本记录拥有默认切换。
+在 `packages/bundle/web-app/cordis.patch.yml` 中把 `agentPresets.default` 设为 `anchored-standard`。未命名预设的新会话组装锚定 preset：一句极简系统提示词加单平台 shell 与 `read` 的 bootstrap，在首次持久 `tool/call` 后晋升为完整 standard 工具目录。用户设置层仍然覆盖组装默认值，在 `standard`、`minimal`、`code` 或 `cordis` 下创建的会话保持其创建时的 preset。[原始 preset 记录](2026-08-15-anchored-standard-preset.zh.md)拥有组装与 bootstrap 机制；本记录拥有默认切换。
 
 Web e2e scaffold 的测试默认保持 `standard`，以稳定回放 fixture。随附默认通过真实 bundle 层在 `apps/cli/tests/web-agent-presets.e2e.ts` 中钉住。
 
 ## 考虑过的替代方案
 
 - **保持 `standard` 为随附默认，把锚定模式描述为 opt-in**——否决：产品推广（桌面版发布与 LINUX DO 社区 README）把锚定模式作为默认体验呈现，首次运行静默组装 `standard` 与这一承诺相矛盾。
-- **等待更强的基准证据再默认化**——否决：原始证据仍然有限，但产品决策是现在随附推广中的模式；证据上限记录在[原始 preset 记录](2026-08-15-anchored-standard-preset.md)中。
+- **等待更强的基准证据再默认化**——否决：原始证据仍然有限，但产品决策是现在随附推广中的模式；证据上限记录在[原始 preset 记录](2026-08-15-anchored-standard-preset.zh.md)中。
 - **删除 `standard`，或把锚定提示词并入其中**——否决：`standard` 仍是完整提示词参考组装，保留可选可维持比较基线，并为希望首次请求即获得完整提示词的会话提供退路。
 
 ## 后果
