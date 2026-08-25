@@ -9,7 +9,33 @@
 
 import { parseArgs } from 'node:util'
 import { isEntry } from './process.ts'
-import { releaseFamily, type ReleaseFamily, type ReleaseMember } from './families.ts'
+import { releaseFamily, type PublishPlan, type ReleaseFamily, type ReleaseMember } from './families.ts'
+
+/**
+ * Print the publish order the release will follow, and the peer declarations it
+ * leaves unordered.
+ *
+ * The order is the release's own plan: an interrupted publication leaves exactly
+ * a prefix of it, so reading it is how anyone judges what a partial run left on
+ * the registry, and printing it on every pull request is what makes a change to
+ * the order reviewable rather than only observable during a publication.
+ * @param family - the release family.
+ * @param plan - the resolved order and its dropped edges.
+ */
+function reportPublishOrder(family: ReleaseFamily, plan: PublishPlan): void {
+  console.log(`release verify: publish order for family ${family.id}, ${String(plan.order.length)} member(s):`)
+  const width = String(plan.order.length).length
+  for (const [index, member] of plan.order.entries()) {
+    console.log(`  ${String(index + 1).padStart(width, ' ')}  ${member.name}@${member.version}`)
+  }
+  if (plan.droppedPeerEdges.length === 0) return
+  console.log(
+    `release verify: ${String(plan.droppedPeerEdges.length)} peer declaration(s) publish unordered,`
+    + ' because the peer cannot precede the package declaring it without contradicting a dependency edge'
+    + ' or its own cycle. npm treats an unmet peer as a warning, so this orders nothing and blocks nothing:',
+  )
+  for (const edge of plan.droppedPeerEdges) console.log(`  ${edge.consumer} -> ${edge.peer}`)
+}
 
 /**
  * Assert every member may be published: npm refuses a `private` package.
@@ -53,9 +79,18 @@ function main(): void {
   if (values.family === undefined) throw new Error('usage: verify.ts --family <dsh|vendor>')
 
   const family = releaseFamily(values.family)
-  const allMembers = family.members(process.cwd())
-  family.verifyVersions(allMembers)
-  const members = family.publishMembers(allMembers)
+  const members = family.members(process.cwd())
+  family.verifyVersions(members)
+  // Resolve the publish order here, before the build: an install-edge cycle
+  // makes the order unrepresentable, and that has to surface at the first gate
+  // rather than when pack is already writing tarballs.
+  const plan = family.publishOrder(members)
+  if (plan.order.length !== members.length) {
+    throw new Error(
+      `release family ${family.id}: publish order covers ${String(plan.order.length)} of ${String(members.length)} members`,
+    )
+  }
+  reportPublishOrder(family, plan)
 
   const publishing = process.env.RELEASE_PUBLISH === 'true'
   if (publishing) {
@@ -63,10 +98,13 @@ function main(): void {
     verifyTag(family, members, process.env.GITHUB_REF ?? '')
   }
 
-  const versions = [...new Set(allMembers.map(member => member.version))]
+  const versions = [...new Set(members.map(member => member.version))]
   const summary = versions.length === 1 ? versions[0] : `${String(versions.length)} versions`
-  const publishSummary = members.length === allMembers.length ? '' : `, ${String(members.length)} publishable`
-  console.log(`release verify: family ${family.id}, ${String(allMembers.length)} member(s)${publishSummary}, ${summary}${publishing ? ', publish gates passed' : ''}`)
+  console.log(
+    `release verify: family ${family.id}, ${String(members.length)} member(s), ${summary},`
+    + ` publish order resolved, ${String(plan.droppedPeerEdges.length)} peer declaration(s) unordered`
+    + (publishing ? ', publish gates passed' : ''),
+  )
 }
 
 if (isEntry(import.meta.url)) main()
