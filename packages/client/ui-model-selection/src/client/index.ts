@@ -24,6 +24,7 @@ import type { ModelDirectoryState } from './directory.ts'
 import { ModelDirectoryResolver } from './service.ts'
 import type { ModelSelectInjected } from './slots.ts'
 import { ModelSelect } from './ModelSelect.tsx'
+import { rememberedEffort } from './preferences.ts'
 import { en, zh, type ModelKey } from './locales.ts'
 
 export { ModelDirectory } from './directory.ts'
@@ -80,9 +81,14 @@ function selectionOf(state: ModelDirectoryState, id: string): ModelSelection | u
     for (const model of group.models) {
       if (rowId(group.id, model.id) !== id) continue
       const sameRoute = state.current?.provider === group.id && state.current.model === model.id
+      const remembered = rememberedEffort(group.id, model.id)
+      const hasRemembered = remembered !== undefined
+        && model.reasoning?.efforts.some(level => level.id === remembered)
       const reasoningEffort = sameRoute
         ? state.current?.reasoningEffort ?? model.reasoning?.defaultEffort
-        : model.reasoning?.defaultEffort
+        : hasRemembered
+          ? remembered
+          : model.reasoning?.defaultEffort
       return {
         provider: group.id,
         model: model.id,

@@ -45,7 +45,10 @@ function state(overrides: Partial<ModelDirectoryState> = {}): ModelDirectoryStat
   }
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  localStorage.clear()
+})
 
 describe('ModelSelect reasoning effort', () => {
   it('renders adapter metadata and submits the effort as part of the session selection', async () => {
@@ -165,6 +168,64 @@ describe('ModelSelect reasoning effort', () => {
     expect(toast.textContent).toContain('模型操作失败：model-unavailable: session already contains images')
     // The selection failure does not render the in-menu load strip (no Retry).
     expect(screen.queryByRole('button', { name: '重试' })).toBeNull()
+  })
+
+  it('reapplies the last explicitly chosen effort when switching back to a model', async () => {
+    const groups = [{
+      id: 'deepseek-official',
+      name: 'DeepSeek',
+      models: [
+        { id: 'deepseek-v4-flash', name: 'DeepSeek-V4-Flash', reasoning },
+        { id: 'deepseek-v4-pro', name: 'DeepSeek-V4-Pro', reasoning: { efforts: reasoning.efforts, defaultEffort: 'off' } },
+      ],
+    }]
+    const directory = createSnapshotStore<ModelDirectoryState>(state({ groups }))
+    const select = vi.fn(async (selection: ModelSelection) => {
+      directory.set(state({ groups, current: selection }))
+      return true
+    })
+    render(<ModelSelect
+      locked={false}
+      available
+      directory={directory}
+      load={vi.fn()}
+      select={select}
+      t={t}
+    />)
+
+    // Remember Max on flash.
+    fireEvent.click(screen.getByRole('button', { name: /当前 DeepSeek-V4-Flash，推理等级 High/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /推理等级/ }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Max/ }))
+    await waitFor(() => {
+      expect(select).toHaveBeenCalledWith(expect.objectContaining({
+        provider: 'deepseek-official',
+        model: 'deepseek-v4-flash',
+        reasoningEffort: 'max',
+      }))
+    })
+
+    // Switch to pro (its default is off).
+    fireEvent.click(screen.getByRole('button', { name: /当前 DeepSeek-V4-Flash，推理等级 Max/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /DeepSeek-V4-Pro/ }))
+    await waitFor(() => {
+      expect(select).toHaveBeenCalledWith(expect.objectContaining({
+        model: 'deepseek-v4-pro',
+        reasoningEffort: 'off',
+      }))
+    })
+
+    // Switching back to flash restores Max, not the model default High.
+    fireEvent.click(screen.getByRole('button', { name: /当前 DeepSeek-V4-Pro，推理等级 Off/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /模型/ }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /DeepSeek-V4-Flash/ }))
+    await waitFor(() => {
+      expect(select).toHaveBeenLastCalledWith(expect.objectContaining({
+        model: 'deepseek-v4-flash',
+        reasoningEffort: 'max',
+      }))
+    })
   })
 
   it('renders no Agent-bound control for an addressed subagent session', () => {

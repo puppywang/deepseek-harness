@@ -23,6 +23,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ModelSelectInjected } from './slots.ts'
+import { rememberedEffort, rememberEffort } from './preferences.ts'
 import css from './ModelSelect.module.css'
 
 /** Which pane the dropdown shows: the two-row root or one drilled-in list. */
@@ -65,17 +66,23 @@ export function ModelSelect(
   const id = useId()
 
   const choices = useMemo(() => state.groups.flatMap(group =>
-    group.models.map(model => ({
-      group,
-      model,
-      selection: {
-        provider: group.id,
-        model: model.id,
-        ...model.reasoning?.defaultEffort === undefined
-          ? {}
-          : { reasoningEffort: model.reasoning.defaultEffort },
-      } satisfies ModelSelection,
-    }))), [state.groups])
+    group.models.map((model) => {
+      const remembered = rememberedEffort(group.id, model.id)
+      const effort = remembered !== undefined && model.reasoning?.efforts.some(level => level.id === remembered)
+        ? remembered
+        : model.reasoning?.defaultEffort
+      return {
+        group,
+        model,
+        selection: {
+          provider: group.id,
+          model: model.id,
+          ...effort === undefined
+            ? {}
+            : { reasoningEffort: effort },
+        } satisfies ModelSelection,
+      }
+    })), [state.groups])
   const selectedIndex = state.current === null
     ? -1
     : choices.findIndex(c => c.selection.provider === state.current?.provider && c.selection.model === state.current.model)
@@ -193,13 +200,17 @@ export function ModelSelect(
       close(true)
       return
     }
+    const { provider, model } = state.current
     const selection: ModelSelection = {
-      provider: state.current.provider,
-      model: state.current.model,
+      provider,
+      model,
       ...effort === undefined ? {} : { reasoningEffort: effort },
     }
     lastActionRef.current = 'select'
-    void select(selection).then(settleSelection)
+    void select(selection).then((accepted) => {
+      settleSelection(accepted)
+      if (accepted) rememberEffort(provider, model, effort)
+    })
   }
 
   const modelLabel = currentChoice?.model.name ?? t('trigger.fallback')
@@ -301,7 +312,18 @@ export function ModelSelect(
                             key={model.id}
                             title={model.name}
                             disabled={busy}
-                            onClick={() => { choose({ provider: group.id, model: model.id }) }}
+                            onClick={() => {
+                              const remembered = rememberedEffort(group.id, model.id)
+                              const effort = remembered !== undefined
+                                && model.reasoning?.efforts.some(level => level.id === remembered)
+                                ? remembered
+                                : model.reasoning?.defaultEffort
+                              choose({
+                                provider: group.id,
+                                model: model.id,
+                                ...effort === undefined ? {} : { reasoningEffort: effort },
+                              })
+                            }}
                           >
                             <span className={css.optionCopy}>
                               <span className={css.modelName}>{model.name}</span>
