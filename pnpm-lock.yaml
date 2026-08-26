@@ -1605,6 +1605,9 @@ importers:
       commander:
         specifier: ^15.0.0
         version: 15.0.0
+      dsh-notification:
+        specifier: ^0.1.1
+        version: 0.1.1(@deepseek-ai/schemastery@vendor+schemastery)
       dsh-plugin-file-explorer:
         specifier: ^0.3.0
         version: 0.3.0
@@ -13053,6 +13056,11 @@ packages:
     resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
     engines: {node: '>=12'}
 
+  dsh-notification@0.1.1:
+    resolution: {integrity: sha512-Rp3eTbgfGCq60pPaKIvkc6r3d/U7qozUz2mUb611QkbKCH6EEkHzD3gebgpVO4B3lvZWsiE5RdM1MHgK2+Tm5Q==}
+    peerDependencies:
+      '@deepseek-ai/schemastery': ^3
+
   dsh-plugin-file-explorer@0.3.0:
     resolution: {integrity: sha512-iH58WYwpH8i/PAYg3jUpOMZuDdz69p8eI2B4BgkcXAF8ydczY5yoRUdw5CSuXb6Qjw5nxDgVbBkLn6PXhj74ow==}
 
@@ -19175,6 +19183,10 @@ snapshots:
       dotenv: 16.4.5
 
   dotenv@16.4.5: {}
+
+  dsh-notification@0.1.1(@deepseek-ai/schemastery@vendor+schemastery):
+    dependencies:
+      '@deepseek-ai/schemastery': link:vendor/schemastery
 
   dsh-plugin-file-explorer@0.3.0: {}
 

@@ -263,6 +263,18 @@
     - id: file-explorer
       name: dsh-plugin-file-explorer
 
+    - id: dsh-notification
+      name: dsh-notification
+      config:
+        desktop: true
+        browser: true
+        browserOnlyWhenHidden: false
+        minTurnDurationMs: 0
+        title: "DeepSeek Harness"
+        notifyOnIdle: true
+        notifyOnError: true
+        notifyOnApproval: true
+
     # Input triggers: the '/' | '@' pipeline (ui-input-trigger), the command surface over
     # it (ui-commands), and the reference sources (ui-skill / ui-reference).
     - id: ui-input-trigger
