@@ -527,14 +527,20 @@ async function stopHarness(): Promise<void> {
 }
 
 function installPermissionHandling(): void {
-  session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'notifications') {
+      callback(true)
+      return
+    }
     callback(false)
   })
   // The Web UI's copy controls use navigator.clipboard.writeText, which rejects
   // with no execCommand fallback when the clipboard-sanitized-write check is
-  // denied; this handler grants only that check and denies everything else.
+  // denied; this handler grants only that check (plus notifications for
+  // dsh-notification) and denies everything else.
   session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
-    return permission === 'clipboard-sanitized-write'
+    return permission === 'notifications'
+      || permission === 'clipboard-sanitized-write'
   })
 }
 
