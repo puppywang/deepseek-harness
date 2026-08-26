@@ -10,13 +10,14 @@ The composer and `/model` popup both composed a model switch as `{ provider, mod
 
 ## Decision
 
-- Add a browser-local preference map keyed by `provider/model` storing the last explicitly chosen effort (`localStorage` key `dsh.modelSelection.efforts`), silently disabled outside browsers and on storage failure.
+- Add a browser preference map keyed by `provider/model` storing the last explicitly chosen effort, persisted in a cookie (`dsh.modelSelection.efforts`), silently disabled outside browsers and on write failure. A cookie is used instead of localStorage because the desktop shell serves the UI from a random loopback port each launch and localStorage is origin-scoped including the port.
 - The composer seat and `/model` selection entry both consult the map when building a model switch: a remembered effort is applied only if the target model still advertises that level; otherwise the model default applies.
+- The host's current selection seeds the map on directory load and after each successful selection, so the currently active model's effort survives a switch away and back even before the user re-picks it.
 - Choosing the provider-default row clears the route's remembered value. A rejected selection does not persist.
 
 ## Alternatives considered
 
-- **Host-side persistence in user settings** — rejected for this iteration: the effort is a per-browser UI preference, not a durable conversation setting, and localStorage keeps the change entirely in the client package.
+- **Host-side persistence in user settings** — rejected for this iteration: the effort is a per-browser UI preference, not a durable conversation setting, and the cookie keeps the change entirely in the client package.
 - **Always carry the current effort across different models** — rejected: third-party models advertise different level vocabularies; carrying an unsupported level would fail the request before network I/O.
 
 ## Consequences

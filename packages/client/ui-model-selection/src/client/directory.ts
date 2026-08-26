@@ -10,6 +10,7 @@ import type {
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-runtime/client'
+import { rememberEffort } from './preferences.ts'
 
 /** Directory snapshot both entries render from. */
 export interface ModelDirectoryState {
@@ -82,6 +83,9 @@ export class ModelDirectory {
       s.status = 'ready'
       s.error = null
     })
+    if (current !== null && current.reasoningEffort !== undefined) {
+      rememberEffort(current.provider, current.model, current.reasoningEffort)
+    }
     return result.value
   }
 
@@ -119,6 +123,13 @@ export class ModelDirectory {
       s.status = 'ready'
       s.error = null
     })
+    if (result.value.selected.reasoningEffort !== undefined) {
+      rememberEffort(
+        result.value.selected.provider,
+        result.value.selected.model,
+        result.value.selected.reasoningEffort,
+      )
+    }
   }
 
   /**

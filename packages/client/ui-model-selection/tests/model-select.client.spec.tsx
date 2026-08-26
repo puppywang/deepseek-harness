@@ -47,7 +47,7 @@ function state(overrides: Partial<ModelDirectoryState> = {}): ModelDirectoryStat
 
 afterEach(() => {
   cleanup()
-  localStorage.clear()
+  document.cookie = 'dsh.modelSelection.efforts=; path=/; max-age=0'
 })
 
 describe('ModelSelect reasoning effort', () => {

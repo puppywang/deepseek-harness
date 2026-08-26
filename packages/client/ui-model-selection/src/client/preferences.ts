@@ -2,12 +2,18 @@
  * Per-model reasoning-effort memory shared by the two model-selection
  * surfaces. The composer seat and the /model popup both consult this map so
  * a user's last explicit thinking level for a third-party model survives
- * model switches and page reloads. Persistence is whole-value localStorage,
- * silently disabled outside browsers and on storage failure, mirroring the
- * runtime snapshot-store policy.
+ * model switches and page reloads.
+ *
+ * Persistence uses a cookie instead of localStorage because the desktop shell
+ * serves the UI from a random loopback port on each launch; localStorage is
+ * origin-scoped including the port, so a new port would lose every stored
+ * effort. Cookies are scoped by host, not port, so the same map remains
+ * readable across restarts. Storage is silently disabled outside browsers and
+ * on write failure.
  */
 
-const STORAGE_KEY = 'dsh.modelSelection.efforts'
+const STORAGE_COOKIE = 'dsh.modelSelection.efforts'
+const STORAGE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365
 
 interface EffortPreferences {
   [route: string]: string
@@ -18,11 +24,13 @@ function routeOf(provider: string, model: string): string {
 }
 
 function readPreferences(): EffortPreferences {
-  if (typeof localStorage === 'undefined') return {}
+  if (typeof document === 'undefined') return {}
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === null) return {}
-    const parsed: unknown = JSON.parse(raw)
+    const cookie = document.cookie
+    const prefix = `${STORAGE_COOKIE}=`
+    const match = cookie.split('; ').find(part => part.startsWith(prefix))
+    if (match === undefined) return {}
+    const parsed: unknown = JSON.parse(decodeURIComponent(match.slice(prefix.length)))
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
     const prefs = parsed as EffortPreferences
     return Object.fromEntries(Object.entries(prefs).filter(([key, value]) =>
@@ -33,11 +41,12 @@ function readPreferences(): EffortPreferences {
 }
 
 function writePreferences(prefs: EffortPreferences): void {
-  if (typeof localStorage === 'undefined') return
+  if (typeof document === 'undefined') return
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
+    const value = encodeURIComponent(JSON.stringify(prefs))
+    document.cookie = `${STORAGE_COOKIE}=${value}; path=/; max-age=${STORAGE_MAX_AGE_SECONDS}; SameSite=Lax`
   } catch {
-    // Storage failure (quota, private mode) only disables the memory.
+    // Storage failure (private mode, quota) only disables the memory.
   }
 }
 

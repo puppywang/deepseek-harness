@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-08-26-remember-per-model-reasoning-effort.md
-2026-08-26-remember-per-model-reasoning-effort.md: f81ead0393d582e5a2731bae52825446bba9863f
-2026-08-26-remember-per-model-reasoning-effort.zh.md: 5060398c46fd602b307a30e66c4c8061a4a0004a
+2026-08-26-remember-per-model-reasoning-effort.md: 062c6bd9a6c1a4a8e7fcc4bf06b953dafd63126d
+2026-08-26-remember-per-model-reasoning-effort.zh.md: 32f080bee3bf50eb973be635c1dc4b8dbb5aca6a

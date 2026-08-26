@@ -4,14 +4,18 @@ import { rememberedEffort, rememberEffort } from '../src/client/preferences.ts'
 
 const KEY = 'dsh.modelSelection.efforts'
 
+function clearCookie(): void {
+  document.cookie = `${KEY}=; path=/; max-age=0`
+}
+
 afterEach(() => {
-  localStorage.clear()
+  clearCookie()
 })
 
 describe('model effort preferences', () => {
-  it('stores and reads a per-route effort', () => {
+  it('stores and reads a per-route effort in a cookie', () => {
     rememberEffort('acme', 'thinker', 'max')
-    expect(localStorage.getItem(KEY)).toContain('"acme/thinker":"max"')
+    expect(document.cookie).toContain(encodeURIComponent('{"acme/thinker":"max"}'))
     expect(rememberedEffort('acme', 'thinker')).toBe('max')
     expect(rememberedEffort('acme', 'other')).toBeUndefined()
   })
@@ -22,16 +26,16 @@ describe('model effort preferences', () => {
     rememberEffort('a', 'm1', undefined)
     expect(rememberedEffort('a', 'm1')).toBeUndefined()
     expect(rememberedEffort('a', 'm2')).toBe('max')
-    expect(localStorage.getItem(KEY)).not.toContain('"a/m1"')
+    expect(document.cookie).not.toContain('"a/m1"')
   })
 
   it('ignores malformed persisted payloads', () => {
-    localStorage.setItem(KEY, '{not-json')
+    document.cookie = `${KEY}=${encodeURIComponent('{not-json')}; path=/`
     expect(rememberedEffort('a', 'm')).toBeUndefined()
   })
 
   it('filters non-string and empty entries', () => {
-    localStorage.setItem(KEY, JSON.stringify({ 'a/m': 42, 'a/empty': '', 'badkey': 'high' }))
+    document.cookie = `${KEY}=${encodeURIComponent(JSON.stringify({ 'a/m': 42, 'a/empty': '', 'badkey': 'high' }))}; path=/`
     expect(rememberedEffort('a', 'm')).toBeUndefined()
     expect(rememberedEffort('a', 'empty')).toBeUndefined()
     expect(rememberedEffort('badkey', '')).toBeUndefined()
