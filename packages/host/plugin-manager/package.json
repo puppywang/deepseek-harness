@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-host-plugin-manager",
   "description": "Host Remote service for profile plugin installation, update, uninstall, and listing",
-  "version": "0.1.1-rc.4",
+  "version": "0.1.1-rc.5",
   "publishConfig": {
     "access": "public"
   },
