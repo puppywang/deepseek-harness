@@ -1,5 +1,6 @@
 /** Browser entry binding the generated Team Remote artifact to its Client UI. */
 
+// @ts-expect-error: stub until host build generates remote
 import agentTeamsRemote from '@deepseek-ai/dsh-experimental-agent-team/remote'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { mountAgentTeamUi } from './mount.ts'
