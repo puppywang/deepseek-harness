@@ -49,11 +49,11 @@ export function apply(ctx: ClientContext): void {
     showGroupTitle: false,
     async candidates(session: ClientSessionContext, { query, quoted, drilled, signal }) {
       const fileLookup = ctx.remote.fileReferences.list(session.sessionId, query, signal)
-        .then(result: any) => result.ok ? result.value : [])
+        .then((result: any) => result.ok ? result.value : [])
       const sessionLookup = quoted === true
         ? Promise.resolve([] as SessionReferenceMentionCandidate[])
         : ctx.remote.sessionReferenceResolver.candidates(session.sessionId, query, signal)
-          .then(result: any) => result.ok ? result.value : [])
+          .then((result: any) => result.ok ? result.value : [])
       const [fileItems, sessionItems] = await Promise.all([fileLookup, sessionLookup])
       if (signal.aborted) return []
       // The header already names the directory being listed; rows repeat it only
@@ -63,8 +63,8 @@ export function apply(ctx: ClientContext): void {
       const home = ctx.remote.$host.home
       const listed = sessions.list.getSnapshot().byId
       return [
-        ...fileItems.flatMap(candidate: any) => fileCandidate(candidate, quoted === true, withLocation, t)),
-        ...sessionItems.map(candidate: any) => sessionCandidate(
+        ...fileItems.flatMap((candidate: any) => fileCandidate(candidate, quoted === true, withLocation, t)),
+        ...sessionItems.map((candidate: any) => sessionCandidate(
           candidate,
           listed[candidate.sessionId]?.updatedAt ?? candidate.createdAt,
           now,

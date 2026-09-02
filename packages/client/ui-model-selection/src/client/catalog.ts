@@ -44,7 +44,7 @@ export class ModelCatalogDirectory {
       draft.status = 'loading'
       draft.error = null
     })
-    const operation = this.ctx.remote.session.modelCatalog().then(response: any) => {
+    const operation = this.ctx.remote.session.modelCatalog().then((response: any) => {
       if (!response.ok) {
         throw new Error(`${response.error.code}: ${response.error.message}`)
       }

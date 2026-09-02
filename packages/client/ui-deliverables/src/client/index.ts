@@ -48,7 +48,7 @@ export function apply(ctx: ClientContext): void {
     if (pendingCapability !== undefined) return
     const revision = capabilityRevision
     const pending = ctx.remote.session.canOpenWorkspacePath()
-      .then(result: any) => {
+      .then((result: any) => {
         if (revision === capabilityRevision) workspacePathOpen.set(result.ok && result.value)
       })
       .finally(() => {
