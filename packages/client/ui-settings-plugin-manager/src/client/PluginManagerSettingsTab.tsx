@@ -1,5 +1,5 @@
-/* eslint-disable */
-// @ts-nocheck
+﻿// @ts-nocheck
+/* oxlint-disable typescript/no-explicit-any, typescript/ban-ts-comment, typescript/no-unnecessary-condition, typescript/no-unsafe-argument, typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access, typescript/no-unsafe-return, typescript/require-await, typescript/prefer-promise-reject-errors, typescript/no-implied-eval, typescript/no-unsafe-call, typescript/no-unused-vars */
 /** Plugin installation and management tab for the Plugins settings section. */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'

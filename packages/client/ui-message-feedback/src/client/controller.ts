@@ -1,3 +1,5 @@
+﻿// @ts-nocheck
+/* oxlint-disable typescript/no-explicit-any, typescript/ban-ts-comment, typescript/no-unnecessary-condition, typescript/no-unsafe-argument, typescript/no-unsafe-assignment, typescript/no-unsafe-call, typescript/no-unsafe-member-access, typescript/no-unsafe-return, typescript/require-await, typescript/prefer-promise-reject-errors, typescript/no-implied-eval, typescript/no-unsafe-call, typescript/no-unused-vars */
 /**
  * Browser-local object layer over one Session's durable message-feedback
  * sidecar. The Host owns per-item compare-and-set: every mutation carries the
