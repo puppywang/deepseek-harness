@@ -1,0 +1,13 @@
+diff --git a/index.js b/index.js
+index f5c62dce79f49db2721a535d3aa665e835e68aef..4d0687f44612f0f8faf9a6c26886b35e3d0c217e 100644
+--- a/index.js
++++ b/index.js
+@@ -44,7 +44,7 @@ function desktopNotify(title, body) {
+         "$t = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02);",
+         `$t.GetElementsByTagName('text').Item(0).AppendChild($t.CreateTextNode('${esc(title)}')) | Out-Null;`,
+         `$t.GetElementsByTagName('text').Item(1).AppendChild($t.CreateTextNode('${esc(body)}')) | Out-Null;`,
+-        `[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('${esc(title)}').Show([Windows.UI.Notifications.ToastNotification]::new($t));`,
++        `[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('electron.app.${esc(title)}').Show([Windows.UI.Notifications.ToastNotification]::new($t));`,
+       ].join(' ')
+       spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps],
+         { stdio: 'ignore', detached: true }).unref()

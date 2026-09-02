@@ -84,3 +84,4 @@ minimumReleaseAgeExclude:
 
 patchedDependencies:
   node-pty@1.2.0-beta.15: patches/node-pty@1.2.0-beta.15.patch
+  dsh-notification@0.1.1: patches/dsh-notification@0.1.1.patch

@@ -615,6 +615,10 @@ async function showStartupError(error: unknown): Promise<void> {
 
 async function boot(): Promise<void> {
   try {
+    // Windows toasts from the bundled dsh-notification plugin use this exact
+    // AppUserModelID so they surface under the installed app's notification
+    // identity instead of being dropped as an unregistered notifier.
+    if (process.platform === 'win32') app.setAppUserModelId('electron.app.DeepSeek Harness')
     installPermissionHandling()
     installApplicationMenu()
     desktopBridge = await startDesktopBridge()

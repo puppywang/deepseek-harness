@@ -118,6 +118,7 @@ External packages that a workspace package resolves at runtime. The tier covers 
 pnpm applies local patches to the following packages at install time, so shipped artifacts carry modified copies; each patch file is the complete record of the modification:
 
 - `node-pty@1.2.0-beta.15` — [`patches/node-pty@1.2.0-beta.15.patch`](patches/node-pty@1.2.0-beta.15.patch)
+- `dsh-notification@0.1.1` — [`patches/dsh-notification@0.1.1.patch`](patches/dsh-notification@0.1.1.patch)
 
 ## Official Claude Code platform payloads
 
