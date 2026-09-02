@@ -41,6 +41,17 @@ describe('reasoning schema boundary', () => {
     const withFalse = configWith({ compat: { supportsDeveloperRole: false } })() as Materialized
     expect(withFalse.providers['acme-gateway']?.models?.[0]?.compat?.supportsDeveloperRole).toBe(false)
   })
+
+  it('accepts Baseten template arguments and completion controls', () => {
+    expect(configWith({
+      compat: {
+        supportsFinishReason: false,
+        thinkingFormat: 'baseten',
+        chatTemplateArgs: { enable_thinking: { $var: 'thinking.enabled' } },
+        supportsThinkingTokenBudget: true,
+      },
+    })).not.toThrow()
+  })
 })
 
 describe('modality schema boundary', () => {
