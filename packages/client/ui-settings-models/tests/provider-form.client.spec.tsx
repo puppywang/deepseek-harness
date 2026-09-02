@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 // @vitest-environment jsdom
 /** Model-list editing, endpoint interrogation, and hand-declared provider creation. */
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'

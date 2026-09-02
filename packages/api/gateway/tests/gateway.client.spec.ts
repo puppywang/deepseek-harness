@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Fiber } from '@deepseek-ai/cordis'

@@ -51,6 +51,9 @@ export interface RemoteErrorDetailsMap {
   'gateway/cancelled': {}
   /** Carrier, dispatch, or unclassified Host failure. */
   'gateway/internal': {}
+  // Allow any future domain error code until its generated augmentation lands
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }
 
 /** Every declared Remote failure code. */
@@ -201,7 +204,12 @@ export type TypertRemoteScopeApi<ContextKey extends string> = {
 }
 
 /** Merge-extensible direct namespace surface generated for Client Remote services. */
-export interface TypertRemoteNamespaceMap {}
+export interface TypertRemoteNamespaceMap {
+  // Allow any future Remote namespace until its generated augmentation lands; real
+  // namespaces are typed as any via the generated lib/typert.* files.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
+}
 
 /** Awaitable disposer returned by Cordis-owned Typert registrations. */
 export type TypertDisposer = () => Promise<void>

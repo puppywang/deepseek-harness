@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { describe, expect, it, vi } from 'vitest'

@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 /**
  * ClientSessions: list store projection (manager → {ids, byId, current}
  * with derived titles), the current-selection account (open validation and

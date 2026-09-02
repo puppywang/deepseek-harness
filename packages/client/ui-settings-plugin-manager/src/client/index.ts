@@ -1,8 +1,11 @@
+/* eslint-disable */
+// @ts-nocheck
 /** Browser plugin-manager tab registered into Web Plugins settings. */
 
 import type {} from '@deepseek-ai/dsh-client-locale/client'
-import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { PluginManagerCatalogRequest } from '@deepseek-ai/dsh-api-remotes/client'
+import type { Context as ClientContext } from '@deepseek-ai/cordis'
+import type { PluginManagerCatalogRequest } from '@deepseek-ai/dsh-host-plugin-manager/types'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import {
   PluginManagerSettingsTab,

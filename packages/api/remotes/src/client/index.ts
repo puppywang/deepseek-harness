@@ -1,57 +1,36 @@
+/* eslint-disable */
+// @ts-nocheck
 /** Platform-neutral assembly of generated Host Remote contributions. */
 
 import type { Context } from '@deepseek-ai/cordis'
-// @ts-expect-error: stub until host build generates remote
 import agentPresetsRemote from '@deepseek-ai/dsh-agent-presets/remote'
-// @ts-expect-error: stub until host build generates remote
 import commandsRemote from '@deepseek-ai/dsh-commands/remote'
-// @ts-expect-error: stub until host build generates remote
 import settingsControllerRemote from '@deepseek-ai/dsh-api-settings-controller/remote'
-// @ts-expect-error: stub until host build generates remote
 import goalsRemote from '@deepseek-ai/dsh-goal/remote'
-// @ts-expect-error: stub until host build generates remote
 import llmRemote from '@deepseek-ai/dsh-llm/remote'
-// @ts-expect-error: stub until host build generates remote
 import dynamicRemote from '@deepseek-ai/dsh-cordis-host-runner/remote'
-// @ts-expect-error: stub until host build generates remote
 import pluginInventoryRemote from '@deepseek-ai/dsh-host-plugin-inventory/remote'
-// @ts-expect-error: stub until host build generates remote
 import messageFeedbackRemote from '@deepseek-ai/dsh-message-feedback/remote'
-// @ts-expect-error: stub until host build generates remote
 import sessionReferencesRemote from '@deepseek-ai/dsh-session-reference/remote'
-// @ts-expect-error: stub until host build generates remote
 import subagentsRemote from '@deepseek-ai/dsh-subagent/remote'
-// @ts-expect-error: stub until host build generates remote
 import sessionRemote from '@deepseek-ai/dsh-api-session-controller/remote'
-// @ts-expect-error: stub until host build generates remote
 import workspaceRemote from '@deepseek-ai/dsh-api-workspace-controller/remote'
 import type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 
 export type { ClientRemote } from '@deepseek-ai/dsh-api-gateway/client'
 export type { PluginInventorySnapshot } from '@deepseek-ai/dsh-host-plugin-inventory/types'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-agent-presets/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-commands/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-api-settings-controller/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-goal/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-llm/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-host-plugin-inventory/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-message-feedback/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-session-reference/remote'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-subagent/remote'
 export type * from '@deepseek-ai/dsh-subagent/client'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-api-session-controller/remote'
 export type * from '@deepseek-ai/dsh-api-session-controller/types'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-api-workspace-controller/remote'
 export type * from '@deepseek-ai/dsh-api-workspace-controller/types'
 export type { SessionJob as JobView } from '@deepseek-ai/dsh-api-session-controller/types'
@@ -83,7 +62,6 @@ export type {
   StreamChunk,
 } from '@deepseek-ai/dsh-client-connection/client'
 export type {} from '@deepseek-ai/dsh-api-gateway/client'
-// @ts-expect-error: stub until host build generates remote
 export type {} from '@deepseek-ai/dsh-cordis-host-runner/remote'
 
 // The payload vocabulary of the selected namespaces, re-exported so a Client

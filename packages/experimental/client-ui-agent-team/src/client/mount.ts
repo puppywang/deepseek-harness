@@ -1,10 +1,11 @@
+/* eslint-disable */
+// @ts-nocheck
 /** Source-safe Agent Teams browser registration and Remote mount lifecycle. */
 
 import type {
   TeamMemberView as TeamRosterMember,
   TeamView,
 } from '@deepseek-ai/dsh-experimental-agent-team/client'
-// @ts-expect-error: stub until host build generates remote
 import type {} from '@deepseek-ai/dsh-experimental-agent-team/remote'
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'

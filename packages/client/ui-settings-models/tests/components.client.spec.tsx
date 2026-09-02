@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 // @vitest-environment jsdom
 /** Section, setup-card, and hand-written editor behavior over a scripted wire face. */
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'

@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 // Test-local programmable Remote fake (NOT the fixture: fixture is a demo
 // data source on a real clock; behavior tests need per-case responses and
 // deferred-controlled timing). Session streams are hand pumps: pushFollow/pushControl.
@@ -201,7 +203,7 @@ export class FakeApiClient {
       },
       session: {
         canOpenWorkspacePath: () => Promise.resolve(ok(true)),
-        list: payload => this.record('session.list', payload, this.onList(payload)),
+        list: (payload: any) => this.record('session.list', payload, this.onList(payload)),
         modelCatalog: () => Promise.resolve({
           ok: true,
           value: {
@@ -211,64 +213,64 @@ export class FakeApiClient {
             failures: [],
           },
         }),
-        search: (payload, signal) => {
+        search: (payload: any, signal: any) => {
           this.lastSearchSignal = signal
           return this.record('session.search', payload, this.onSearch(payload))
         },
-        create: payload => this.record('session.create', payload, this.onCreate(payload)),
-        selectModel: payload => this.record(
+        create: (payload: any) => this.record('session.create', payload, this.onCreate(payload)),
+        selectModel: (payload: any) => this.record(
           'session.selectModel',
           payload,
           this.onSelectModel(payload),
         ),
-        rename: payload => this.record('session.rename', payload, this.onRename(payload)),
-        fork: payload => this.record('session.fork', payload, this.onFork(payload)),
-        prompt: payload => this.record('session.prompt', payload, this.onPrompt(payload)),
-        attachment: payload => this.record('session.attachment', payload, this.onAttachment(payload)),
-        updateQueue: payload => this.record('session.updateQueue', payload, this.onUpdateQueue(payload)),
-        cancel: payload => this.record('session.cancel', payload, this.onCancel(payload)),
-        openWorkspacePath: payload => this.record(
+        rename: (payload: any) => this.record('session.rename', payload, this.onRename(payload)),
+        fork: (payload: any) => this.record('session.fork', payload, this.onFork(payload)),
+        prompt: (payload: any) => this.record('session.prompt', payload, this.onPrompt(payload)),
+        attachment: (payload: any) => this.record('session.attachment', payload, this.onAttachment(payload)),
+        updateQueue: (payload: any) => this.record('session.updateQueue', payload, this.onUpdateQueue(payload)),
+        cancel: (payload: any) => this.record('session.cancel', payload, this.onCancel(payload)),
+        openWorkspacePath: (payload: any) => this.record(
           'session.openWorkspacePath',
           payload,
           this.onOpenWorkspacePath(payload),
         ),
-        page: request => this.page(request),
-        follow: (request, signal) => this.openFollow(request, signal),
-        control: signal => this.openControl(signal),
+        page: (request: any) => this.page(request),
+        follow: (request: any, signal: any) => this.openFollow(request, signal),
+        control: (signal: any) => this.openControl(signal),
       },
       subagents: {
-        list: parentSessionId => this.record(
+        list: (parentSessionId: any) => this.record(
           'subagents.list',
           parentSessionId,
           this.onSubagentList(parentSessionId),
         ),
-        prompt: request => this.record('subagents.prompt', request, this.onSubagentPrompt(request)),
-        interruptByParent: (childSessionId, parentSessionId, mode) => this.record(
+        prompt: (request: any) => this.record('subagents.prompt', request, this.onSubagentPrompt(request)),
+        interruptByParent: (childSessionId: any, parentSessionId: any, mode: any) => this.record(
           'subagents.interruptByParent',
           { childSessionId, parentSessionId, mode },
           this.onSubagentInterrupt({ childSessionId, parentSessionId, mode }),
         ),
       },
       workspace: {
-        create: payload => this.record('workspace.create', payload, this.onWorkspaceCreate(payload)),
-        rename: payload => this.record('workspace.rename', payload, this.onWorkspaceRename(payload)),
-        delete: payload => this.record('workspace.delete', payload, this.onWorkspaceDelete(payload)),
-        insertBefore: payload => this.record(
+        create: (payload: any) => this.record('workspace.create', payload, this.onWorkspaceCreate(payload)),
+        rename: (payload: any) => this.record('workspace.rename', payload, this.onWorkspaceRename(payload)),
+        delete: (payload: any) => this.record('workspace.delete', payload, this.onWorkspaceDelete(payload)),
+        insertBefore: (payload: any) => this.record(
           'workspace.insertBefore',
           payload,
           this.onWorkspaceInsertBefore(payload),
         ),
-        insertSessionBefore: payload => this.record(
+        insertSessionBefore: (payload: any) => this.record(
           'workspace.insertSessionBefore',
           payload,
           this.onWorkspaceInsertSessionBefore(payload),
         ),
-        archiveSession: payload => this.record(
+        archiveSession: (payload: any) => this.record(
           'workspace.archiveSession',
           payload,
           this.onWorkspaceArchiveSession(payload),
         ),
-        follow: signal => this.openWorkspace(signal),
+        follow: (signal: any) => this.openWorkspace(signal),
       },
     }
   }

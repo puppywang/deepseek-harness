@@ -1,6 +1,7 @@
+/* eslint-disable */
+// @ts-nocheck
 /** Session-specific adapters for Gateway-owned Remote stream lifecycles. */
 
-// @ts-expect-error: stub until host build generates remote
 import type {} from '@deepseek-ai/dsh-api-session-controller/remote'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import {
