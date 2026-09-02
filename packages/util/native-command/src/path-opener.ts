@@ -12,12 +12,6 @@
 import { release as osRelease } from 'node:os'
 import { extname } from 'node:path'
 import { runNativeCommand, type NativeCommandRunner } from './runner.ts'
-import {
-  electronPathOpenBridgeFromEnv,
-  openElectronPath,
-  type ElectronPathOpenBridge,
-  type ElectronPathOpenIntent,
-} from './electron-path-bridge.ts'
 
 /** Testable command boundary; native implementations never invoke a shell. */
 export type PathOpenerRunner = NativeCommandRunner
@@ -30,10 +24,6 @@ export interface PathOpenerInternals {
   /** Environment used for WSL markers and the desktop Linux browser convention. */
   env?: NodeJS.ProcessEnv
   run?: PathOpenerRunner
-  /** Replaces the optional Electron desktop bridge for deterministic tests. */
-  electronOpenPath?: (
-    path: string, intent: ElectronPathOpenIntent, signal: AbortSignal,
-  ) => Promise<void>
 }
 
 /** Documents a browser renders, as opposed to ones an editor merely edits. */
@@ -138,14 +128,6 @@ async function openNativePathWithIntent(
   const env = internals.env ?? process.env
   const wsl = platform === 'linux' && isWsl(internals)
 
-  const electronBridge = electronPathOpenBridgeFromEnv()
-  if (electronBridge !== undefined || internals.electronOpenPath !== undefined) {
-    const open = internals.electronOpenPath ?? ((target: string, targetIntent: ElectronPathOpenIntent, openSignal: AbortSignal) =>
-      openElectronPath(electronBridge as ElectronPathOpenBridge, target, targetIntent, openSignal))
-    await open(path, intent, signal)
-    return
-  }
-
   if (!wsl && intent === 'default' && BROWSER_DOCUMENTS.has(extname(path).toLowerCase())
     && await openInBrowser(path, signal, platform, run, env)) return
 
@@ -183,7 +165,6 @@ async function openNativePathWithIntent(
  * @returns true when handing a path to the native opener can work at all.
  */
 export function canOpenNativePath(internals: PathOpenerInternals = {}): boolean {
-  if (electronPathOpenBridgeFromEnv() !== undefined || internals.electronOpenPath !== undefined) return true
   const platform = internals.platform ?? process.platform
   if (platform === 'darwin' || platform === 'win32') return true
   if (platform !== 'linux') return false

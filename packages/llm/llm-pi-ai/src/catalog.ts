@@ -143,6 +143,7 @@ export type PiAiChatTemplateVar = Extract<ChatTemplateKwargValue, { $var: string
 const CHAT_TEMPLATE_VAR_GATE: Record<PiAiChatTemplateVar, true> = {
   'thinking.enabled': true,
   'thinking.effort': true,
+  'thinking.budget': true,
 }
 
 /** The request-state placeholders a profile may name. */
@@ -229,6 +230,7 @@ const COMPLETIONS_COMPAT_GATE = {
   chatTemplateKwargs: 'offer',
   chatTemplateArgs: 'offer',
   supportsThinkingTokenBudget: 'offer',
+  thinkingTokenBudgetField: 'offer',
   supportsStrictMode: 'offer',
   cacheControlFormat: 'offer',
   supportsLongCacheRetention: 'offer',
@@ -262,6 +264,7 @@ const ANTHROPIC_COMPAT_GATE = {
   forceAdaptiveThinking: 'offer',
   allowEmptySignature: 'offer',
   supportsStrictTools: 'offer',
+  allowedFallbackModels: 'offer',
   sendSessionAffinityHeaders: 'withhold',
   supportsToolReferences: 'withhold',
 } as const satisfies Record<keyof AnthropicMessagesCompat, CompatDisposition>
@@ -379,6 +382,8 @@ export interface PiAiCompatProfile {
   chatTemplateArgs?: NonNullable<OpenAICompletionsCompat['chatTemplateArgs']>
   /** Whether the endpoint accepts `thinking_token_budget` to cap vLLM reasoning; `openai-completions`. */
   supportsThinkingTokenBudget?: boolean
+  /** The token-budget request field name the endpoint reads; `openai-completions`. */
+  thinkingTokenBudgetField?: NonNullable<OpenAICompletionsCompat['thinkingTokenBudgetField']>
   /**
    * Whether the endpoint accepts `strict` in tool definitions;
    * `openai-completions`, the three Responses protocols, `bedrock-converse-stream`.
@@ -403,6 +408,8 @@ export interface PiAiCompatProfile {
   allowEmptySignature?: boolean
   /** Whether the endpoint accepts Anthropic strict tool schemas; `anthropic-messages`. */
   supportsStrictTools?: boolean
+  /** Whether the endpoint accepts an allowed fallback-model list; `anthropic-messages`. */
+  allowedFallbackModels?: NonNullable<AnthropicMessagesCompat['allowedFallbackModels']>
 }
 
 /** Compile-time constraint that `T` is `never`. */

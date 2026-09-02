@@ -273,6 +273,7 @@
     { "path": "./packages/bundle/web-app" },
     { "path": "./packages/boot/app-boot" },
     { "path": "./packages/boot/cmdline" },
+    { "path": "./packages/host/plugin-manager" },
     { "path": "./packages/sdk/server" },
     { "path": "./packages/test-support/llm-replay" },
     { "path": "./packages/typert/generator" },

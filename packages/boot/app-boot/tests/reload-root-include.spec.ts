@@ -51,6 +51,7 @@ function makeProfile(profileDir: string, patchPath: string, layers: Profile['lay
     layers,
     patchPath,
     patches: [],
+    patchReload: 'startup',
   }
 }
 

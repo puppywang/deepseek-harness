@@ -261,6 +261,7 @@ const compatProfile: z<PiAiCompatProfile> = z.object({
   chatTemplateKwargs: z.dict(chatTemplateKwarg),
   chatTemplateArgs: z.dict(chatTemplateKwarg),
   supportsThinkingTokenBudget: z.boolean(),
+  thinkingTokenBudgetField: z.union(['thinking_token_budget', 'thinking_budget', 'thinking_budget_tokens']),
   supportsStrictMode: z.boolean(),
   cacheControlFormat: z.union(CACHE_CONTROL_FORMATS),
   supportsLongCacheRetention: z.boolean(),
@@ -270,6 +271,7 @@ const compatProfile: z<PiAiCompatProfile> = z.object({
   forceAdaptiveThinking: z.boolean(),
   allowEmptySignature: z.boolean(),
   supportsStrictTools: z.boolean(),
+  allowedFallbackModels: z.array(z.any()),
 })
 
 /**

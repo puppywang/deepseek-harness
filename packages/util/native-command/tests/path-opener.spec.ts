@@ -16,14 +16,10 @@ const { execFileMock } = vi.hoisted(() => ({ execFileMock: vi.fn<ExecFileMock>()
 vi.mock('node:child_process', () => ({ execFile: execFileMock }))
 
 import { release as osRelease } from 'node:os'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { canOpenNativePath, openNativePath, openNativeTextFile, type PathOpenerRunner } from '../src/index.ts'
 
 const signal = () => new AbortController().signal
-
-afterEach(() => {
-  vi.unstubAllEnvs()
-})
 
 describe('native path opener', () => {
   it('opens with macOS open(1)', async () => {
@@ -46,27 +42,6 @@ describe('native path opener', () => {
     expect(run).toHaveBeenCalledWith('xdg-open', ['/tmp/settings.yaml'], expect.any(AbortSignal))
   })
 
-  it('uses the Electron desktop bridge before platform-specific openers', async () => {
-    const run = vi.fn<PathOpenerRunner>()
-    const electronOpenPath = vi.fn(async (): Promise<void> => {})
-    await openNativeTextFile('C:\\work\\settings.yaml', signal(), {
-      platform: 'win32', run, electronOpenPath,
-    })
-    expect(electronOpenPath).toHaveBeenCalledWith(
-      'C:\\work\\settings.yaml', 'text-editor', expect.any(AbortSignal),
-    )
-    expect(run).not.toHaveBeenCalled()
-  })
-
-  it('reports the Electron desktop bridge as a usable native opener', () => {
-    vi.stubEnv('DSH_ELECTRON_OPEN_PATH_URL', 'http://127.0.0.1:1234/open')
-    vi.stubEnv('DSH_ELECTRON_OPEN_PATH_TOKEN', 'secret')
-    expect(canOpenNativePath({ platform: 'linux', env: {} })).toBe(true)
-  })
-
-  it('reports an injected Electron opener as usable', () => {
-    expect(canOpenNativePath({ platform: 'linux', env: {}, electronOpenPath: async () => {} })).toBe(true)
-  })
   it.each([
     ['distribution marker', { WSL_DISTRO_NAME: 'Ubuntu' }, '6.8.0-generic'],
     ['interop marker', { WSL_INTEROP: '/run/WSL/123_interop' }, '6.8.0-generic'],
